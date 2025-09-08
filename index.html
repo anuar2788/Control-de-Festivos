@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Festivos – Sheets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-full">
+  <div class="max-w-7xl mx-auto p-6 space-y-6">
+    <!-- LOGIN -->
+    <section id="loginCard" class="p-6 max-w-md mx-auto bg-white shadow rounded">
+      <h2 class="text-xl font-semibold mb-4">Acceso</h2>
+      <div class="grid gap-3">
+        <input id="lUser" class="border rounded p-2" placeholder="Usuario" autocomplete="username">
+        <input id="lPass" type="password" class="border rounded p-2" placeholder="Contraseña" autocomplete="current-password">
+        <button id="btnLogin" class="bg-black text-white px-3 py-2 rounded">Entrar</button>
+        <div id="lMsg" class="text-sm text-red-600"></div>
+      </div>
+    </section>
+
+    <!-- APP -->
+    <section id="app" class="hidden">
+      <h1 class="text-2xl font-bold">Dashboard Festivos</h1>
+      <p>Usuario: <span id="uName"></span> • Rol: <span id="uRole"></span></p>
+      <button id="btnLogout" class="border px-3 py-2 rounded">Salir</button>
+      <pre id="resultados" class="mt-4 bg-white p-3 rounded shadow text-sm"></pre>
+    </section>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwQW3YkltG85Ue7w9Q_qei_u4wGjK1j4b3Bt-kLWQixIy-ATy_aMLPf97MJ-pF1cXvE7g/exec";
+
+    let TOKEN=null, ROLE="empleado", USERNAME="";
+
+    document.getElementById("btnLogin").addEventListener("click", async ()=>{
+      const usuario = document.getElementById("lUser").value.trim();
+      const password = document.getElementById("lPass").value;
+      document.getElementById("lMsg").textContent="";
+      try{
+        const res = await fetch(API_URL, {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({action:"login", usuario, password})
+        });
+        const json = await res.json();
+        if(!json.ok) throw new Error(json.error||"Error");
+        TOKEN=json.token; ROLE=json.role; USERNAME=usuario;
+        document.getElementById("uName").textContent=USERNAME;
+        document.getElementById("uRole").textContent=ROLE;
+        document.getElementById("loginCard").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+        cargarDatos();
+      }catch(err){
+        document.getElementById("lMsg").textContent="Acceso denegado ("+err.message+")";
+      }
+    });
+
+    document.getElementById("btnLogout").addEventListener("click", ()=>{
+      TOKEN=null; ROLE="empleado"; USERNAME="";
+      document.getElementById("app").classList.add("hidden");
+      document.getElementById("loginCard").classList.remove("hidden");
+    });
+
+    async function api(action, payload={}){
+      const body = Object.assign({action, token:TOKEN}, payload);
+      const res = await fetch(API_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+      const json = await res.json();
+      if(!json.ok) throw new Error(json.error||"API_ERROR");
+      return json;
+    }
+
+    async function cargarDatos(){
+      try{
+        const {data} = await api("list");
+        document.getElementById("resultados").textContent = JSON.stringify(data,null,2);
+      }catch(err){
+        document.getElementById("resultados").textContent = "Error cargando datos: "+err.message;
+      }
+    }
+  </script>
+</body>
+</html>
