@@ -46,12 +46,13 @@
             <span id="uLocalWrap" class="ml-2 hidden">• Local: <span id="uLocal"></span></span>
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <button id="btnExport" class="btn">Exportar CSV</button>
           <label class="btn cursor-pointer">Importar CSV
             <input id="fileImport" type="file" accept=".csv" class="hidden" />
           </label>
           <button id="btnPrint" class="btn">Imprimir</button>
+          <button id="btnOpenUser" class="btn hidden">+ Nuevo usuario</button>
           <button id="btnOpenModal" class="btn-primary">+ Añadir registro</button>
           <button id="btnLogout" class="btn">Salir</button>
         </div>
@@ -120,7 +121,7 @@
     </section>
   </div>
 
-  <!-- Modal Añadir/Editar -->
+  <!-- Modal Añadir/Editar registro -->
   <dialog id="modal" class="rounded-2xl p-0 w-full max-w-xl">
     <form id="form" method="dialog" class="card p-6 space-y-4">
       <div class="flex items-center justify-between">
@@ -164,6 +165,42 @@
     </form>
   </dialog>
 
+  <!-- Modal Usuarios (admin/supervisor) -->
+  <dialog id="modalUser" class="rounded-2xl p-0 w-full max-w-lg">
+    <form id="formUser" method="dialog" class="card p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Nuevo usuario</h3>
+        <button type="button" onclick="modalUser.close()" class="btn">Cerrar</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm text-slate-600">Usuario</label>
+          <input id="u_usuario" required class="input" placeholder="nombre usuario" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Contraseña</label>
+          <input id="u_password" required class="input" placeholder="contraseña" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Rol</label>
+          <select id="u_rol" class="input">
+            <option value="empleado">empleado</option>
+            <option value="supervisor">supervisor</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Local</label>
+          <input id="u_local" class="input" placeholder="Cañada / Oasis" />
+        </div>
+      </div>
+      <div class="text-sm text-slate-500">* Si eres supervisor, crearás empleados de tu local.</div>
+      <div class="flex justify-end">
+        <button type="submit" class="btn-primary">Crear</button>
+      </div>
+    </form>
+  </dialog>
+
   <script>
     // ========= CONFIG =========
     const API_URL = 'https://script.google.com/macros/s/AKfycbwQW3YkltG85Ue7w9Q_qei_u4wGjK1j4b3Bt-kLWQixIy-ATy_aMLPf97MJ-pF1cXvE7g/exec';
@@ -175,6 +212,7 @@
     const $ = (s, el=document)=> el.querySelector(s);
     const $$= (s, el=document)=> Array.from(el.querySelectorAll(s));
     const modal = document.getElementById('modal');
+    const modalUser = document.getElementById('modalUser');
     const debounce = (fn,ms=200)=>{let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
 
     // ===== LOGIN =====
@@ -191,6 +229,7 @@
         if(ROLE==='supervisor'){ $('#uLocal').textContent = USER_LOCAL; $('#uLocalWrap').classList.remove('hidden'); }
         if(ROLE!=='admin'){ const fEmp = $('#fEmpleado'); fEmp.value = USERNAME; fEmp.setAttribute('disabled','true'); }
         if(ROLE==='supervisor'){ const fLoc = $('#fLocal'); fLoc.value = USER_LOCAL; fLoc.setAttribute('disabled','true'); }
+        if(ROLE==='admin' || ROLE==='supervisor'){ document.getElementById('btnOpenUser').classList.remove('hidden'); }
 
         $('#loginCard').classList.add('hidden'); $('#app').classList.remove('hidden');
 
@@ -303,7 +342,7 @@
     function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function fmtDate(d){ const x = new Date(d); if(isNaN(+x)) return ''; return x.toLocaleDateString('es-ES', { weekday:'short', day:'2-digit', month:'numeric', year:'numeric' }); }
 
-    // CRUD UI
+    // CRUD UI (festivos)
     function openEdit(id){
       const r = DATA.find(x=>x.id===id); if(!r) return;
       EDIT_ID = id;
@@ -443,6 +482,37 @@
       }
       out.push(cur); return out;
     }
+
+    // ===== Usuarios (admin/supervisor) =====
+    document.getElementById('btnOpenUser').addEventListener('click', ()=>{
+      document.getElementById('u_usuario').value='';
+      document.getElementById('u_password').value='';
+      document.getElementById('u_rol').value = (ROLE==='supervisor') ? 'empleado' : 'empleado';
+      document.getElementById('u_local').value = (ROLE==='supervisor') ? USER_LOCAL : '';
+      if(ROLE==='supervisor'){
+        document.getElementById('u_rol').setAttribute('disabled','true');
+        document.getElementById('u_local').setAttribute('disabled','true');
+      }else{
+        document.getElementById('u_rol').removeAttribute('disabled');
+        document.getElementById('u_local').removeAttribute('disabled');
+      }
+      modalUser.showModal();
+    });
+
+    document.getElementById('formUser').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const usuario = document.getElementById('u_usuario').value.trim();
+      const password = document.getElementById('u_password').value.trim();
+      const rol = (ROLE==='supervisor') ? 'empleado' : document.getElementById('u_rol').value;
+      const local = (ROLE==='supervisor') ? USER_LOCAL : (document.getElementById('u_local').value.trim() || '');
+      if(!usuario || !password){ alert('Usuario y contraseña son obligatorios'); return; }
+      try{
+        const resp = await api('add_user', { user:{ usuario, password, rol, local } });
+        if(!resp.ok) throw new Error(resp.error||'Error');
+        alert('Usuario creado');
+        modalUser.close();
+      }catch(err){ alert('Error: '+err.message); }
+    });
   </script>
 </body>
 </html>
