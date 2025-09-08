@@ -154,7 +154,6 @@
   </dialog>
 
   <script>
-    // ========= CONFIG =========
     const API_URL = 'https://script.google.com/macros/s/AKfycbwXzwAlJZ8DO7L7xdqseFpvqTLdDV8cTO2NonJCHTesQLmruRFzZFjPFpxCAVdcvfK0wQ/exec';
     const HORAS_POR_DIA = 8;
 
@@ -164,17 +163,10 @@
     const $$= (s, el=document)=> Array.from(el.querySelectorAll(s));
     const modal = document.getElementById('modal');
 
-    // Fallback seguro para <dialog>
-    function openModalSafe() {
-      try { if (modal && typeof modal.showModal === 'function') modal.showModal(); else modal.setAttribute('open',''); }
-      catch(e){ modal.setAttribute('open',''); }
-    }
-    function closeModalSafe() {
-      try { if (modal && typeof modal.close === 'function') modal.close(); else modal.removeAttribute('open'); }
-      catch(e){ modal.removeAttribute('open'); }
-    }
+    function openModalSafe(){ try{ if(modal.showModal) modal.showModal(); else modal.setAttribute('open',''); }catch(e){ modal.setAttribute('open',''); } }
+    function closeModalSafe(){ try{ if(modal.close) modal.close(); else modal.removeAttribute('open'); }catch(e){ modal.removeAttribute('open'); } }
 
-    // ===== LOGIN =====
+    // LOGIN
     document.getElementById('btnLogin').addEventListener('click', async ()=>{
       const usuario = document.getElementById('lUser').value.trim();
       const password = document.getElementById('lPass').value;
@@ -185,12 +177,9 @@
         if(!json.ok) throw new Error(json.error||'Error');
         TOKEN=json.token; ROLE=json.role; USERNAME=usuario; USER_LOCAL=json.local||'';
         $('#uName').textContent = USERNAME; $('#uRole').textContent = ROLE;
-
         if(ROLE==='supervisor'){ $('#uLocal').textContent = USER_LOCAL; $('#uLocalWrap').classList.remove('hidden'); }
-
-        // Botón crear visible para admin, supervisor y empleado
+        // Botón crear visible a admin, supervisor y empleado
         $('#btnOpenModal').classList.remove('hidden');
-
         $('#loginCard').classList.add('hidden'); $('#app').classList.remove('hidden');
         await loadData();
       }catch(err){ $('#lMsg').textContent = 'Acceso denegado ('+err.message+')'; }
@@ -201,7 +190,7 @@
       $('#app').classList.add('hidden'); $('#loginCard').classList.remove('hidden');
     });
 
-    // ===== API =====
+    // API
     async function api(action, payload={}){
       const body = Object.assign({action, token:TOKEN}, payload);
       const res = await fetch(API_URL, { method:'POST', body: JSON.stringify(body) });
@@ -211,7 +200,7 @@
     }
     async function loadData(){ const { data } = await api('list'); DATA = data; render(); }
 
-    // ===== RENDER =====
+    // RENDER
     function render(){
       const fEmpleado = ($('#fEmpleado').value||'').trim().toLowerCase();
       const fEstado   = $('#fEstado').value;
@@ -226,15 +215,14 @@
         if (fLocal && !String(r.local||'').toLowerCase().includes(fLocal)) return false;
         const dFest = new Date(r.festivo);
         if (fDesde && dFest < fDesde) return false;
-        if (fHasta){ const dH = new Date(fHasta); dH.setHours(23,59,59,999); if (dFest > dH) return false; }
+        if (fHasta){ const dH=new Date(fHasta); dH.setHours(23,59,59,999); if (dFest > dH) return false; }
         return true;
       });
 
       const tbody = $('#tbody'); tbody.innerHTML='';
       const frag = document.createDocumentFragment();
       for(const r of filtered){
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50';
+        const tr = document.createElement('tr'); tr.className='hover:bg-slate-50';
         tr.innerHTML = `
           <td class="td py-3">${esc(r.empleado)}</td>
           <td class="td">${fmtDate(r.festivo)}</td>
@@ -262,18 +250,17 @@
       }));
     }
 
-    // ===== Helpers =====
+    // Helpers
     const esc = s => String(s).replace(/[&<>\"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     const num = n => (Number(n||0)).toFixed(2);
     function fmtDate(d){ const x=new Date(d); if(isNaN(+x)) return ''; return x.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'numeric',year:'numeric'}); }
 
-    // ===== CRUD UI =====
+    // CRUD UI
     document.getElementById('btnOpenModal').addEventListener('click', openCreate);
     document.getElementById('btnDelete').addEventListener('click', async ()=>{
       if(!EDIT_ID) return;
       try{ await api('delete',{id:EDIT_ID}); closeModalSafe(); await loadData(); }catch(e){ alert(e.message); }
     });
-
     document.getElementById('btnHoy').addEventListener('click', ()=>{
       const t=new Date(); const y=t.getFullYear(); const m=String(t.getMonth()+1).padStart(2,'0'); const d=String(t.getDate()).padStart(2,'0');
       document.getElementById('festivo').value = `${y}-${m}-${d}`;
@@ -285,13 +272,12 @@
       document.getElementById('btnDelete').classList.add('hidden');
 
       if(ROLE==='admin'){
-        // Admin: elige empleado y local (obligatorios)
         $('#empleado').value=''; $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
         $('#local').value='';   $('#local').removeAttribute('disabled');   $('#local').setAttribute('required','true');
       }else if(ROLE==='supervisor'){
-        // Supervisor: elige empleado; local fijado a su local
-        $('#empleado').value='';      $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
-        $('#local').value=USER_LOCAL; $('#local').setAttribute('disabled','true'); $('#local').setAttribute('required','true');
+        // supervisor ahora elige local libremente
+        $('#empleado').value=''; $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
+        $('#local').value='';   $('#local').removeAttribute('disabled');   $('#local').setAttribute('required','true');
       }else{ // empleado
         $('#empleado').value=USERNAME; $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
         $('#local').value='';          $('#local').setAttribute('disabled','true');    $('#local').removeAttribute('required');
@@ -311,8 +297,9 @@
         $('#empleado').value=r.empleado; $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
         $('#local').value=r.local||'';   $('#local').removeAttribute('disabled');   $('#local').setAttribute('required','true');
       }else if(ROLE==='supervisor'){
+        // supervisor puede corregir el local si quiere
         $('#empleado').value=r.empleado; $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
-        $('#local').value=USER_LOCAL;    $('#local').setAttribute('disabled','true'); $('#local').setAttribute('required','true');
+        $('#local').value=r.local||'';   $('#local').removeAttribute('disabled');   $('#local').setAttribute('required','true');
       }else{ // empleado
         $('#empleado').value=USERNAME;   $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
         $('#local').value=r.local||'';   $('#local').setAttribute('disabled','true');    $('#local').removeAttribute('required');
@@ -339,14 +326,12 @@
       const devuelto   = $('#devuelto').checked;
       const notas      = $('#notas').value.trim() || undefined;
 
-      // Local: admin lo indica; supervisor su local; empleado vacío (lo maneja el backend)
-      const local = (ROLE==='admin') ? $('#local').value.trim()
-                 : (ROLE==='supervisor') ? USER_LOCAL
-                 : '';
+      // Local: admin/supervisor lo eligen; empleado no
+      const local = (ROLE==='admin' || ROLE==='supervisor') ? $('#local').value.trim() : '';
 
       // Validaciones
       if(ROLE!=='empleado' && !empleado){ alert('Empleado es obligatorio'); return; }
-      if(ROLE==='admin' && !local){ alert('Local es obligatorio'); return; }
+      if((ROLE==='admin' || ROLE==='supervisor') && !local){ alert('Local es obligatorio'); return; }
       if(!festivo){ alert('Indica la fecha del festivo'); return; }
       if(!(horas>0)){ alert('Indica horas > 0'); return; }
 
