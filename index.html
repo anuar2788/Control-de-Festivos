@@ -18,8 +18,8 @@
     .chip{padding:.25rem .5rem;border-radius:999px;background:#f6f7f9;font-size:.75rem}
     .switch{position:relative;display:inline-block;width:42px;height:24px}
     .switch input{opacity:0;width:0;height:0}
-    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e5e7eb;transition:.2s;border-radius:24px}
-    .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.2s;border-radius:50%}
+    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e5e7eb;transition:.15s;border-radius:24px}
+    .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.15s;border-radius:50%}
     input:checked + .slider{background:#16a34a}input:checked + .slider:before{transform:translateX(18px)}
   </style>
 </head>
@@ -52,35 +52,16 @@
             <input id="fileImport" type="file" accept=".csv" class="hidden" />
           </label>
           <button id="btnPrint" class="btn">Imprimir</button>
-          <button id="btnOpenUser" class="btn hidden">+ Nuevo usuario</button>
           <button id="btnOpenModal" class="btn-primary">+ Añadir registro</button>
           <button id="btnLogout" class="btn">Salir</button>
         </div>
       </header>
 
-      <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Horas pendientes</div>
-          <div id="sumHorasPendientes" class="text-3xl font-bold">0 h</div>
-          <div id="sumDiasPendientes" class="text-slate-500">0,0 días</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Registros pendientes</div>
-          <div id="sumRegPend" class="text-3xl font-bold">0</div>
-          <div class="text-slate-500">Aún por compensar</div>
-        </div>
-        <div class="card p-5">
-          <div class="text-sm text-slate-500">Próximas devoluciones (30 días)</div>
-          <div id="sumProximas" class="text-3xl font-bold">0</div>
-          <div class="text-slate-500">Programadas</div>
-        </div>
-      </section>
-
       <section class="card p-5 mt-4">
         <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
           <input id="fEmpleado" class="input" placeholder="Filtrar por empleado" />
           <select id="fEstado" class="input">
-            <option value="todos">Todos los estados</option>
+            <option value="todos">Todos</option>
             <option value="pendiente">Pendiente</option>
             <option value="devuelto">Devuelto</option>
           </select>
@@ -97,7 +78,7 @@
             <thead>
               <tr class="border-b">
                 <th class="th py-2">Empleado</th>
-                <th class="th py-2">Festivo trabajado</th>
+                <th class="th py-2">Festivo</th>
                 <th class="th py-2">Horas</th>
                 <th class="th py-2">Devolución</th>
                 <th class="th py-2">Estado</th>
@@ -110,18 +91,10 @@
           </table>
         </div>
       </section>
-
-      <section class="card p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="font-semibold">Saldo por empleado</h2>
-          <div class="text-sm text-slate-500">* 1 día = <span id="cfgHorasDiaLabel">8</span> h</div>
-        </div>
-        <div id="perEmployee" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-      </section>
     </section>
   </div>
 
-  <!-- Modal Añadir/Editar registro -->
+  <!-- Modal Añadir/Editar -->
   <dialog id="modal" class="rounded-2xl p-0 w-full max-w-xl">
     <form id="form" method="dialog" class="card p-6 space-y-4">
       <div class="flex items-center justify-between">
@@ -165,42 +138,6 @@
     </form>
   </dialog>
 
-  <!-- Modal Usuarios (admin/supervisor) -->
-  <dialog id="modalUser" class="rounded-2xl p-0 w-full max-w-lg">
-    <form id="formUser" method="dialog" class="card p-6 space-y-4">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold">Nuevo usuario</h3>
-        <button type="button" onclick="modalUser.close()" class="btn">Cerrar</button>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label class="text-sm text-slate-600">Usuario</label>
-          <input id="u_usuario" required class="input" placeholder="nombre usuario" />
-        </div>
-        <div>
-          <label class="text-sm text-slate-600">Contraseña</label>
-          <input id="u_password" required class="input" placeholder="contraseña" />
-        </div>
-        <div>
-          <label class="text-sm text-slate-600">Rol</label>
-          <select id="u_rol" class="input">
-            <option value="empleado">empleado</option>
-            <option value="supervisor">supervisor</option>
-            <option value="admin">admin</option>
-          </select>
-        </div>
-        <div>
-          <label class="text-sm text-slate-600">Local</label>
-          <input id="u_local" class="input" placeholder="Cañada / Oasis" />
-        </div>
-      </div>
-      <div class="text-sm text-slate-500">* Si eres supervisor, crearás empleados de tu local.</div>
-      <div class="flex justify-end">
-        <button type="submit" class="btn-primary">Crear</button>
-      </div>
-    </form>
-  </dialog>
-
   <script>
     // ========= CONFIG =========
     const API_URL = 'https://script.google.com/macros/s/AKfycbwQW3YkltG85Ue7w9Q_qei_u4wGjK1j4b3Bt-kLWQixIy-ATy_aMLPf97MJ-pF1cXvE7g/exec';
@@ -212,7 +149,6 @@
     const $ = (s, el=document)=> el.querySelector(s);
     const $$= (s, el=document)=> Array.from(el.querySelectorAll(s));
     const modal = document.getElementById('modal');
-    const modalUser = document.getElementById('modalUser');
     const debounce = (fn,ms=200)=>{let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
 
     // ===== LOGIN =====
@@ -229,11 +165,16 @@
         if(ROLE==='supervisor'){ $('#uLocal').textContent = USER_LOCAL; $('#uLocalWrap').classList.remove('hidden'); }
         if(ROLE!=='admin'){ const fEmp = $('#fEmpleado'); fEmp.value = USERNAME; fEmp.setAttribute('disabled','true'); }
         if(ROLE==='supervisor'){ const fLoc = $('#fLocal'); fLoc.value = USER_LOCAL; fLoc.setAttribute('disabled','true'); }
-        if(ROLE==='admin' || ROLE==='supervisor'){ document.getElementById('btnOpenUser').classList.remove('hidden'); }
+
+        // Botones según rol
+        if(ROLE==='supervisor'){
+          $('#btnOpenModal').classList.add('hidden');       // SUPERVISOR NO CREA
+        }else{
+          $('#btnOpenModal').classList.remove('hidden');    // admin/empleado sí
+        }
 
         $('#loginCard').classList.add('hidden'); $('#app').classList.remove('hidden');
 
-        const cached = localStorage.getItem('festivos'); if(cached){ DATA = JSON.parse(cached); render(); }
         await loadData();
       }catch(err){ $('#lMsg').textContent = 'Acceso denegado ('+err.message+')'; }
     });
@@ -249,12 +190,10 @@
       if(!json.ok) throw new Error(json.error||'API_ERROR');
       return json;
     }
-    async function loadData(){ const { data } = await api('list'); DATA = data; localStorage.setItem('festivos', JSON.stringify(DATA)); render(); }
+    async function loadData(){ const { data } = await api('list'); DATA = data; render(); }
 
     // ===== RENDER =====
     function render(){
-      $('#cfgHorasDiaLabel').textContent = HORAS_POR_DIA;
-
       const fEmpleado = ($('#fEmpleado').value||'').trim().toLowerCase();
       const fEstado   = $('#fEstado').value;
       const fDesde    = $('#fDesde').value ? new Date($('#fDesde').value) : null;
@@ -297,44 +236,14 @@
       $$('[data-edit]').forEach(b=>b.addEventListener('click', ()=> openEdit(b.getAttribute('data-edit'))));
       $$('[data-done]').forEach(b=>b.addEventListener('click', async ()=>{
         const id = b.getAttribute('data-done');
-        await api('update', {record:{id, devuelto:true}});
-        await loadData();
+        try{ await api('update', {record:{id, devuelto:true}}); await loadData(); }
+        catch(err){ alert(err.message); }
       }));
       $$('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
         const id = b.getAttribute('data-del');
         if(!confirm('¿Eliminar registro?')) return;
-        await api('delete', {id});
-        await loadData();
-      }));
-
-      const hoy = new Date();
-      const proximas = DATA.filter(r => !r.devuelto && r.devolucion && (new Date(r.devolucion) - hoy) / 86400000 <= 30 && (new Date(r.devolucion) >= hoy)).length;
-      $('#sumProximas').textContent = proximas;
-      const horasPend = DATA.filter(r=>!r.devuelto).reduce((acc,r)=>acc + Number(r.horas||0), 0);
-      $('#sumHorasPendientes').textContent = `${horasPend.toFixed(2)} h`;
-      $('#sumDiasPendientes').textContent = `${(horasPend/HORAS_POR_DIA).toFixed(2)} días`;
-      $('#sumRegPend').textContent = DATA.filter(r=>!r.devuelto).length;
-
-      const per = {};
-      for(const r of DATA){
-        if(!per[r.empleado]) per[r.empleado] = { pendH:0, devH:0 };
-        if(!r.devuelto){ per[r.empleado].pendH += Number(r.horas||0); } else { per[r.empleado].devH += Number(r.horas||0); }
-      }
-      const wrap = $('#perEmployee'); wrap.innerHTML='';
-      Object.entries(per).sort((a,b)=>b[1].pendH - a[1].pendH).forEach(([emp, v])=>{
-        const card = document.createElement('div');
-        card.className = 'p-4 card';
-        card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div class="font-semibold">${escapeHtml(emp)}</div>
-            <span class="chip">Pend: ${(v.pendH/HORAS_POR_DIA).toFixed(2)} d</span>
-          </div>
-          <div class="mt-2 text-sm text-slate-600">Pendientes: ${v.pendH.toFixed(2)} h • Devueltas: ${v.devH.toFixed(2)} h</div>
-          <div class="mt-3 flex gap-2"><button class="btn" data-filter-emp="${emp}">Ver registros</button></div>`;
-        wrap.appendChild(card);
-      });
-      $$('[data-filter-emp]').forEach(b=>b.addEventListener('click', ()=>{
-        $('#fEmpleado').value = b.getAttribute('data-filter-emp'); render();
+        try{ await api('delete', {id}); await loadData(); }
+        catch(err){ alert(err.message); }
       }));
     }
 
@@ -342,65 +251,36 @@
     function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function fmtDate(d){ const x = new Date(d); if(isNaN(+x)) return ''; return x.toLocaleDateString('es-ES', { weekday:'short', day:'2-digit', month:'numeric', year:'numeric' }); }
 
-    // CRUD UI (festivos)
+    // CRUD UI
     function openEdit(id){
       const r = DATA.find(x=>x.id===id); if(!r) return;
       EDIT_ID = id;
       document.getElementById('modalTitle').textContent='Editar registro'; document.getElementById('btnDelete').classList.remove('hidden');
 
-      // Empleado: admin y supervisor pueden editar; empleado solo su propio usuario
-      if(ROLE==='empleado'){
-        document.getElementById('empleado').value = USERNAME;
-        document.getElementById('empleado').setAttribute('disabled','true');
-      }else{
-        document.getElementById('empleado').value = r.empleado;
-        document.getElementById('empleado').removeAttribute('disabled');
-      }
+      // Empleado editable solo para admin; empleado bloqueado a sí mismo; supervisor puede editar si es su local (lo valida backend)
+      if(ROLE==='empleado'){ $('#empleado').value = USERNAME; $('#empleado').setAttribute('disabled','true'); }
+      else { $('#empleado').value = r.empleado; $('#empleado').removeAttribute('disabled'); }
 
-      document.getElementById('festivo').value=r.festivo;
-      document.getElementById('horas').value=r.horas;
-      document.getElementById('devolucion').value=r.devolucion||'';
-      document.getElementById('devuelto').checked=!!r.devuelto;
-      document.getElementById('notas').value=r.notas||'';
-
-      // Local: admin puede editar; supervisor forzado a su local
-      if(ROLE==='supervisor'){
-        document.getElementById('local').value = USER_LOCAL;
-        document.getElementById('local').setAttribute('disabled','true');
-      }else{
-        document.getElementById('local').value = r.local || '';
-        document.getElementById('local').removeAttribute('disabled');
-      }
+      $('#festivo').value=r.festivo;
+      $('#horas').value=r.horas;
+      $('#devolucion').value=r.devolucion||'';
+      $('#devuelto').checked=!!r.devuelto;
+      $('#notas').value=r.notas||'';
+      $('#local').value = r.local || '';
+      if(ROLE!=='admin'){ $('#local').setAttribute('disabled','true'); } else { $('#local').removeAttribute('disabled'); }
 
       modal.showModal();
     }
     function openCreate(){
+      if(ROLE==='supervisor'){ alert('No permitido para supervisores'); return; } // guard
       EDIT_ID = null;
       document.getElementById('modalTitle').textContent='Añadir registro'; document.getElementById('btnDelete').classList.add('hidden');
 
-      // Empleado: admin/supervisor pueden elegir; empleado bloqueado a su usuario
-      if(ROLE==='empleado'){
-        document.getElementById('empleado').value = USERNAME;
-        document.getElementById('empleado').setAttribute('disabled','true');
-      }else{
-        document.getElementById('empleado').value = '';
-        document.getElementById('empleado').removeAttribute('disabled');
-      }
+      if(ROLE==='empleado'){ $('#empleado').value = USERNAME; $('#empleado').setAttribute('disabled','true'); }
+      else { $('#empleado').value = ''; $('#empleado').removeAttribute('disabled'); }
 
-      document.getElementById('festivo').value='';
-      document.getElementById('horas').value=HORAS_POR_DIA;
-      document.getElementById('devolucion').value='';
-      document.getElementById('devuelto').checked=false;
-      document.getElementById('notas').value='';
-
-      // Local: supervisor fijo a su local; admin libre
-      if(ROLE==='supervisor'){
-        document.getElementById('local').value = USER_LOCAL;
-        document.getElementById('local').setAttribute('disabled','true');
-      }else{
-        document.getElementById('local').value = '';
-        document.getElementById('local').removeAttribute('disabled');
-      }
+      $('#festivo').value=''; $('#horas').value=HORAS_POR_DIA; $('#devolucion').value=''; $('#devuelto').checked=false; $('#notas').value='';
+      $('#local').value = ''; if(ROLE!=='admin'){ $('#local').setAttribute('disabled','true'); } else { $('#local').removeAttribute('disabled'); }
 
       modal.showModal();
     }
@@ -408,110 +288,24 @@
 
     document.getElementById('form').addEventListener('submit', async (e)=>{
       e.preventDefault();
+      if(ROLE==='supervisor'){ alert('No permitido para supervisores'); return; } // guard
       const rec = {
-        empleado: (ROLE==='admin' || ROLE==='supervisor') ? document.getElementById('empleado').value.trim() : USERNAME,
-        festivo: document.getElementById('festivo').value,
-        horas: Number(document.getElementById('horas').value||0),
-        devolucion: document.getElementById('devolucion').value || undefined,
-        devuelto: document.getElementById('devuelto').checked,
-        notas: document.getElementById('notas').value.trim() || undefined,
-        local: ROLE==='admin' ? document.getElementById('local').value.trim()
-             : (ROLE==='supervisor' ? USER_LOCAL : (document.getElementById('local').value.trim() || ''))
+        empleado: (ROLE==='admin') ? $('#empleado').value.trim() : USERNAME,
+        festivo: $('#festivo').value,
+        horas: Number($('#horas').value||0),
+        devolucion: $('#devolucion').value || undefined,
+        devuelto: $('#devuelto').checked,
+        notas: $('#notas').value.trim() || undefined,
+        local: (ROLE==='admin') ? $('#local').value.trim() : ''
       };
-      if(EDIT_ID){ rec.id = EDIT_ID; await api('update', {record: rec}); }
-      else{ await api('add', {record: rec}); }
-      modal.close(); await loadData();
+      try{
+        if(EDIT_ID){ rec.id = EDIT_ID; await api('update', {record: rec}); }
+        else{ await api('add', {record: rec}); }
+        modal.close(); await loadData();
+      }catch(err){ alert(err.message); }
     });
     document.getElementById('btnDelete').addEventListener('click', async ()=>{
-      if(!EDIT_ID) return; await api('delete', {id: EDIT_ID}); modal.close(); await loadData();
-    });
-
-    // Filtros
-    document.getElementById('fEmpleado').addEventListener('input', debounce(render,200));
-    document.getElementById('fEstado').addEventListener('change', render);
-    document.getElementById('fDesde').addEventListener('change', render);
-    document.getElementById('fHasta').addEventListener('change', render);
-    document.getElementById('fLocal').addEventListener('input', debounce(render,200));
-    document.getElementById('btnClearFilters').addEventListener('click', ()=>{
-      if(ROLE==='admin'){ document.getElementById('fEmpleado').value=''; document.getElementById('fLocal').value=''; }
-      else{
-        document.getElementById('fEmpleado').value=USERNAME;
-        if(ROLE==='supervisor'){ document.getElementById('fLocal').value=USER_LOCAL; } else { document.getElementById('fLocal').value=''; }
-      }
-      document.getElementById('fEstado').value='todos'; document.getElementById('fDesde').value=''; document.getElementById('fHasta').value=''; render();
-    });
-
-    // Exportar / Importar
-    document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
-    document.getElementById('btnExport').addEventListener('click', ()=>{
-      const header = ['id','empleado','festivo','horas','devolucion','devuelto','notas','local'];
-      const rows = DATA.map(r=> header.map(k=> JSON.stringify(r[k] ?? '')));
-      const csv = [header.join(','), ...rows.map(r=> r.join(','))].join('\n');
-      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'festivos.csv'; a.click(); URL.revokeObjectURL(a.href);
-    });
-    document.getElementById('fileImport').addEventListener('change', async (e)=>{
-      if(ROLE!=='admin'){ alert('Solo admin puede importar.'); e.target.value=''; return; }
-      const file = e.target.files[0]; if(!file) return;
-      const text = await file.text();
-      const lines = String(text).split(/\r?\n/).filter(Boolean);
-      const header = lines.shift().split(',').map(s=> s.replace(/^\\"|\\"$/g,''));
-      const idx = (k)=> header.indexOf(k);
-      for(const line of lines){
-        const cols = parseCsvLine(line);
-        const rec = {
-          empleado: cols[idx('empleado')]?.replace(/^\\"|\\"$/g,'') || '',
-          festivo: (cols[idx('festivo')]||'').replace(/^\\"|\\"$/g,''),
-          horas: Number((cols[idx('horas')]||'0').replace(/^\\"|\\"$/g,'')) || 0,
-          devolucion: (cols[idx('devolucion')]||'').replace(/^\\"|\\"$/g,'') || undefined,
-          devuelto: ((cols[idx('devuelto')]||'').replace(/^\\"|\\"$/g,'').toLowerCase()==='true'),
-          notas: (cols[idx('notas')]||'').replace(/^\\"|\\"$/g,'') || undefined,
-          local: (cols[idx('local')]||'').replace(/^\\"|\\"$/g,'')
-        };
-        if(rec.empleado && rec.festivo && rec.horas){ await api('add', {record: rec}); }
-      }
-      e.target.value=''; await loadData();
-    });
-    function parseCsvLine(line){
-      const out=[]; let cur=''; let inQ=false;
-      for(let i=0;i<line.length;i++){
-        const ch=line[i];
-        if(ch=='"'){ if(inQ && line[i+1]=='"'){ cur+='"'; i++; } else { inQ=!inQ; } }
-        else if(ch===',' && !inQ){ out.push(cur); cur=''; }
-        else { cur+=ch; }
-      }
-      out.push(cur); return out;
-    }
-
-    // ===== Usuarios (admin/supervisor) =====
-    document.getElementById('btnOpenUser').addEventListener('click', ()=>{
-      document.getElementById('u_usuario').value='';
-      document.getElementById('u_password').value='';
-      document.getElementById('u_rol').value = (ROLE==='supervisor') ? 'empleado' : 'empleado';
-      document.getElementById('u_local').value = (ROLE==='supervisor') ? USER_LOCAL : '';
-      if(ROLE==='supervisor'){
-        document.getElementById('u_rol').setAttribute('disabled','true');
-        document.getElementById('u_local').setAttribute('disabled','true');
-      }else{
-        document.getElementById('u_rol').removeAttribute('disabled');
-        document.getElementById('u_local').removeAttribute('disabled');
-      }
-      modalUser.showModal();
-    });
-
-    document.getElementById('formUser').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const usuario = document.getElementById('u_usuario').value.trim();
-      const password = document.getElementById('u_password').value.trim();
-      const rol = (ROLE==='supervisor') ? 'empleado' : document.getElementById('u_rol').value;
-      const local = (ROLE==='supervisor') ? USER_LOCAL : (document.getElementById('u_local').value.trim() || '');
-      if(!usuario || !password){ alert('Usuario y contraseña son obligatorios'); return; }
-      try{
-        const resp = await api('add_user', { user:{ usuario, password, rol, local } });
-        if(!resp.ok) throw new Error(resp.error||'Error');
-        alert('Usuario creado');
-        modalUser.close();
-      }catch(err){ alert('Error: '+err.message); }
+      if(!EDIT_ID) return; try{ await api('delete', {id: EDIT_ID}); modal.close(); await loadData(); }catch(err){ alert(err.message); }
     });
   </script>
 </body>
