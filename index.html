@@ -6,7 +6,7 @@
   <title>Control de Festivos</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    html,body{height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;}
+    html,body{height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;}
     .card{background:#fff;border-radius:1rem;border:1px solid #e5e7eb}
     .btn{padding:.5rem .75rem;border-radius:.75rem;border:1px solid #e2e8f0;transition:.15s}
     .btn:hover{background:#f8fafc}.btn:active{transform:scale(.99)}
@@ -101,36 +101,52 @@
         <h3 id="modalTitle" class="text-lg font-semibold">Añadir registro</h3>
         <button type="button" onclick="modal.close()" class="btn">Cerrar</button>
       </div>
+
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label class="text-sm text-slate-600">Empleado</label>
-          <input id="empleado" required class="input" placeholder="Nombre" />
+          <input id="empleado" class="input" placeholder="Nombre empleado" />
         </div>
+
         <div>
           <label class="text-sm text-slate-600">Festivo trabajado</label>
-          <input id="festivo" required type="date" class="input" />
+          <div class="flex gap-2">
+            <input id="festivo" required type="date" class="input" />
+            <button id="btnHoy" type="button" class="btn">Hoy</button>
+          </div>
         </div>
+
         <div>
           <label class="text-sm text-slate-600">Horas trabajadas</label>
           <input id="horas" required type="number" step="0.25" min="0.25" class="input" placeholder="8" />
         </div>
+
         <div>
           <label class="text-sm text-slate-600">Devolución programada</label>
           <input id="devolucion" type="date" class="input" />
         </div>
+
         <div class="flex items-center gap-3">
           <label class="text-sm text-slate-600">Devuelto</label>
           <label class="switch"><input id="devuelto" type="checkbox"><span class="slider"></span></label>
         </div>
+
         <div>
           <label class="text-sm text-slate-600">Local</label>
-          <input id="local" class="input" placeholder="Cañada / Oasis" />
+          <!-- datalist con sugerencias; editable -->
+          <input id="local" class="input" list="locales" placeholder="Cañada / Oasis" />
+          <datalist id="locales">
+            <option value="Cañada"></option>
+            <option value="Oasis"></option>
+          </datalist>
         </div>
+
         <div class="md:col-span-2">
           <label class="text-sm text-slate-600">Notas</label>
           <input id="notas" class="input" placeholder="Opcional" />
         </div>
       </div>
+
       <div class="flex justify-end gap-2">
         <button type="button" id="btnDelete" class="btn hidden">Eliminar</button>
         <button type="submit" class="btn-primary">Guardar</button>
@@ -149,7 +165,7 @@
     const $$= (s, el=document)=> Array.from(el.querySelectorAll(s));
     const modal = document.getElementById('modal');
 
-    // LOGIN
+    // ===== LOGIN =====
     document.getElementById('btnLogin').addEventListener('click', async ()=>{
       const usuario = document.getElementById('lUser').value.trim();
       const password = document.getElementById('lPass').value;
@@ -162,15 +178,16 @@
         $('#uName').textContent = USERNAME; $('#uRole').textContent = ROLE;
         if(ROLE==='supervisor'){ $('#uLocal').textContent = USER_LOCAL; $('#uLocalWrap').classList.remove('hidden'); }
 
-        // Botones según rol
+        // Botones según rol (supervisor no crea)
         if(ROLE==='supervisor'){ $('#btnOpenModal').classList.add('hidden'); }
-        else{ $('#btnOpenModal').classList.remove('hidden'); }
+        else { $('#btnOpenModal').classList.remove('hidden'); }
 
         $('#loginCard').classList.add('hidden'); $('#app').classList.remove('hidden');
         await loadData();
       }catch(err){ $('#lMsg').textContent = 'Acceso denegado ('+err.message+')'; }
     });
 
+    // ===== API =====
     async function api(action, payload={}){
       const body = Object.assign({action, token:TOKEN}, payload);
       const res = await fetch(API_URL, { method:'POST', body: JSON.stringify(body) });
@@ -180,7 +197,130 @@
     }
     async function loadData(){ const { data } = await api('list'); DATA = data; render(); }
 
-    function render(){ /* ...igual que antes... */ }
+    // ===== RENDER =====
+    function render(){
+      const tbody = $('#tbody'); tbody.innerHTML='';
+      const frag = document.createDocumentFragment();
+      for(const r of DATA){
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="td py-3">${esc(r.empleado)}</td>
+          <td class="td">${fmtDate(r.festivo)}</td>
+          <td class="td">${num(r.horas)} h (${num(r.horas/HORAS_POR_DIA)} d)</td>
+          <td class="td">${r.devolucion ? fmtDate(r.devolucion) : '<span class="chip">Sin programar</span>'}</td>
+          <td class="td">${r.devuelto ? '<span class="chip">Devuelto</span>' : '<span class="chip">Pendiente</span>'}</td>
+          <td class="td">${r.notas ? esc(r.notas) : ''}</td>
+          <td class="td">${r.local ? esc(r.local) : ''}</td>
+          <td class="td text-right">
+            <button class="btn" data-edit="${r.id}">Editar</button>
+            ${!r.devuelto ? `<button class="btn" data-done="${r.id}">Marcar devuelto</button>` : ''}
+            <button class="btn" data-del="${r.id}">Borrar</button>
+          </td>`;
+        frag.appendChild(tr);
+      }
+      tbody.appendChild(frag);
+
+      $$('[data-edit]').forEach(b=>b.addEventListener('click', ()=> openEdit(b.getAttribute('data-edit'))));
+      $$('[data-done]').forEach(b=>b.addEventListener('click', async ()=>{
+        const id=b.getAttribute('data-done'); try{ await api('update',{record:{id,devuelto:true}}); await loadData(); }catch(e){ alert(e.message); }
+      }));
+      $$('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+        const id=b.getAttribute('data-del'); if(!confirm('¿Eliminar registro?')) return;
+        try{ await api('delete',{id}); await loadData(); }catch(e){ alert(e.message); }
+      }));
+    }
+
+    // ===== Helpers =====
+    const esc = s => String(s).replace(/[&<>\"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    const num = n => (Number(n||0)).toFixed(2);
+    function fmtDate(d){ const x=new Date(d); if(isNaN(+x)) return ''; return x.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'numeric',year:'numeric'}); }
+
+    // ===== CRUD UI =====
+    document.getElementById('btnOpenModal').addEventListener('click', openCreate);
+    document.getElementById('btnDelete').addEventListener('click', async ()=>{
+      if(!EDIT_ID) return;
+      try{ await api('delete',{id:EDIT_ID}); modal.close(); await loadData(); }catch(e){ alert(e.message); }
+    });
+
+    document.getElementById('btnHoy').addEventListener('click', ()=>{
+      const today = new Date(); const y=today.getFullYear(); const m=String(today.getMonth()+1).padStart(2,'0'); const d=String(today.getDate()).padStart(2,'0');
+      document.getElementById('festivo').value = `${y}-${m}-${d}`;
+    });
+
+    function openCreate(){
+      if(ROLE==='supervisor'){ alert('No permitido para supervisores'); return; }
+      EDIT_ID=null;
+      document.getElementById('modalTitle').textContent='Añadir registro';
+      document.getElementById('btnDelete').classList.add('hidden');
+
+      // Empleado/local según rol
+      if(ROLE==='admin'){
+        // admin puede y debe indicar empleado y local
+        $('#empleado').value=''; $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
+        $('#local').value=''; $('#local').removeAttribute('disabled'); $('#local').setAttribute('required','true');
+      }else{ // empleado
+        $('#empleado').value=USERNAME; $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
+        $('#local').value=''; $('#local').setAttribute('disabled','true'); $('#local').removeAttribute('required');
+      }
+
+      $('#festivo').value=''; $('#horas').value=8; $('#devolucion').value=''; $('#devuelto').checked=false; $('#notas').value='';
+      modal.showModal();
+    }
+
+    function openEdit(id){
+      const r = DATA.find(x=>x.id===id); if(!r) return;
+      EDIT_ID=id;
+      document.getElementById('modalTitle').textContent='Editar registro';
+      document.getElementById('btnDelete').classList.remove('hidden');
+
+      if(ROLE==='admin'){
+        $('#empleado').value=r.empleado; $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
+        $('#local').value=r.local||'';   $('#local').removeAttribute('disabled');   $('#local').setAttribute('required','true');
+      }else if(ROLE==='empleado'){
+        $('#empleado').value=USERNAME;   $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
+        $('#local').value=r.local||'';   $('#local').setAttribute('disabled','true');   $('#local').removeAttribute('required');
+      }else{ // supervisor (no crea, pero puede editar si su local lo permite; lo valida backend)
+        $('#empleado').value=r.empleado; $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
+        $('#local').value=r.local||'';   $('#local').setAttribute('disabled','true');   $('#local').removeAttribute('required');
+      }
+
+      $('#festivo').value=r.festivo;
+      $('#horas').value=r.horas;
+      $('#devolucion').value=r.devolucion||'';
+      $('#devuelto').checked=!!r.devuelto;
+      $('#notas').value=r.notas||'';
+      modal.showModal();
+    }
+
+    document.getElementById('form').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(ROLE==='supervisor'){ alert('No permitido para supervisores'); return; }
+
+      const empleado = (ROLE==='admin') ? $('#empleado').value.trim() : USERNAME;
+      const festivo  = $('#festivo').value;
+      const horas    = Number($('#horas').value||0);
+      const devolucion = $('#devolucion').value || undefined;
+      const devuelto   = $('#devuelto').checked;
+      const notas      = $('#notas').value.trim() || undefined;
+      const local      = (ROLE==='admin') ? $('#local').value.trim() : '';
+
+      // VALIDACIONES extra para admin
+      if(ROLE==='admin'){
+        if(!empleado){ alert('El campo Empleado es obligatorio.'); return; }
+        if(!local){ alert('El campo Local es obligatorio.'); return; }
+      }
+      if(!festivo){ alert('Indica la fecha del festivo trabajado.'); return; }
+      if(!(horas>0)){ alert('Indica las horas trabajadas (> 0).'); return; }
+
+      const rec = {empleado, festivo, horas, devolucion, devuelto, notas, local};
+
+      try{
+        if(EDIT_ID){ rec.id=EDIT_ID; await api('update',{record:rec}); }
+        else{ await api('add',{record:rec}); }
+        modal.close(); await loadData();
+      }catch(err){ alert(err.message); }
+    });
   </script>
 </body>
 </html>
