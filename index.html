@@ -52,7 +52,7 @@
             <input id="fileImport" type="file" accept=".csv" class="hidden" />
           </label>
           <button id="btnPrint" class="btn">Imprimir</button>
-          <button id="btnOpenModal" class="btn-primary">+ Añadir registro</button>
+          <button id="btnOpenModal" type="button" class="btn-primary">+ Añadir registro</button>
           <button id="btnLogout" class="btn">Salir</button>
         </div>
       </header>
@@ -99,7 +99,7 @@
     <form id="form" method="dialog" class="card p-6 space-y-4">
       <div class="flex items-center justify-between">
         <h3 id="modalTitle" class="text-lg font-semibold">Añadir registro</h3>
-        <button type="button" onclick="modal.close()" class="btn">Cerrar</button>
+        <button type="button" onclick="closeModalSafe()" class="btn">Cerrar</button>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -133,7 +133,6 @@
 
         <div>
           <label class="text-sm text-slate-600">Local</label>
-          <!-- datalist con sugerencias; editable -->
           <input id="local" class="input" list="locales" placeholder="Cañada / Oasis" />
           <datalist id="locales">
             <option value="Cañada"></option>
@@ -165,6 +164,16 @@
     const $$= (s, el=document)=> Array.from(el.querySelectorAll(s));
     const modal = document.getElementById('modal');
 
+    // Fallback seguro para <dialog>
+    function openModalSafe() {
+      try { if (modal && typeof modal.showModal === 'function') modal.showModal(); else modal.setAttribute('open',''); }
+      catch(e){ modal.setAttribute('open',''); }
+    }
+    function closeModalSafe() {
+      try { if (modal && typeof modal.close === 'function') modal.close(); else modal.removeAttribute('open'); }
+      catch(e){ modal.removeAttribute('open'); }
+    }
+
     // ===== LOGIN =====
     document.getElementById('btnLogin').addEventListener('click', async ()=>{
       const usuario = document.getElementById('lUser').value.trim();
@@ -176,15 +185,20 @@
         if(!json.ok) throw new Error(json.error||'Error');
         TOKEN=json.token; ROLE=json.role; USERNAME=usuario; USER_LOCAL=json.local||'';
         $('#uName').textContent = USERNAME; $('#uRole').textContent = ROLE;
+
         if(ROLE==='supervisor'){ $('#uLocal').textContent = USER_LOCAL; $('#uLocalWrap').classList.remove('hidden'); }
 
-        // Botones según rol (supervisor no crea)
-        if(ROLE==='supervisor'){ $('#btnOpenModal').classList.add('hidden'); }
-        else { $('#btnOpenModal').classList.remove('hidden'); }
+        // Botón crear visible para admin, supervisor y empleado
+        $('#btnOpenModal').classList.remove('hidden');
 
         $('#loginCard').classList.add('hidden'); $('#app').classList.remove('hidden');
         await loadData();
       }catch(err){ $('#lMsg').textContent = 'Acceso denegado ('+err.message+')'; }
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', ()=>{
+      TOKEN=null; ROLE='empleado'; USERNAME=''; USER_LOCAL=''; DATA=[]; render();
+      $('#app').classList.add('hidden'); $('#loginCard').classList.remove('hidden');
     });
 
     // ===== API =====
@@ -199,9 +213,26 @@
 
     // ===== RENDER =====
     function render(){
+      const fEmpleado = ($('#fEmpleado').value||'').trim().toLowerCase();
+      const fEstado   = $('#fEstado').value;
+      const fDesde    = $('#fDesde').value ? new Date($('#fDesde').value) : null;
+      const fHasta    = $('#fHasta').value ? new Date($('#fHasta').value) : null;
+      const fLocal    = ($('#fLocal').value||'').trim().toLowerCase();
+
+      const filtered = DATA.filter(r=>{
+        if (fEmpleado && !r.empleado.toLowerCase().includes(fEmpleado)) return false;
+        if (fEstado==='pendiente' && r.devuelto) return false;
+        if (fEstado==='devuelto' && !r.devuelto) return false;
+        if (fLocal && !String(r.local||'').toLowerCase().includes(fLocal)) return false;
+        const dFest = new Date(r.festivo);
+        if (fDesde && dFest < fDesde) return false;
+        if (fHasta){ const dH = new Date(fHasta); dH.setHours(23,59,59,999); if (dFest > dH) return false; }
+        return true;
+      });
+
       const tbody = $('#tbody'); tbody.innerHTML='';
       const frag = document.createDocumentFragment();
-      for(const r of DATA){
+      for(const r of filtered){
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50';
         tr.innerHTML = `
@@ -240,32 +271,34 @@
     document.getElementById('btnOpenModal').addEventListener('click', openCreate);
     document.getElementById('btnDelete').addEventListener('click', async ()=>{
       if(!EDIT_ID) return;
-      try{ await api('delete',{id:EDIT_ID}); modal.close(); await loadData(); }catch(e){ alert(e.message); }
+      try{ await api('delete',{id:EDIT_ID}); closeModalSafe(); await loadData(); }catch(e){ alert(e.message); }
     });
 
     document.getElementById('btnHoy').addEventListener('click', ()=>{
-      const today = new Date(); const y=today.getFullYear(); const m=String(today.getMonth()+1).padStart(2,'0'); const d=String(today.getDate()).padStart(2,'0');
+      const t=new Date(); const y=t.getFullYear(); const m=String(t.getMonth()+1).padStart(2,'0'); const d=String(t.getDate()).padStart(2,'0');
       document.getElementById('festivo').value = `${y}-${m}-${d}`;
     });
 
     function openCreate(){
-      if(ROLE==='supervisor'){ alert('No permitido para supervisores'); return; }
       EDIT_ID=null;
       document.getElementById('modalTitle').textContent='Añadir registro';
       document.getElementById('btnDelete').classList.add('hidden');
 
-      // Empleado/local según rol
       if(ROLE==='admin'){
-        // admin puede y debe indicar empleado y local
+        // Admin: elige empleado y local (obligatorios)
         $('#empleado').value=''; $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
-        $('#local').value=''; $('#local').removeAttribute('disabled'); $('#local').setAttribute('required','true');
+        $('#local').value='';   $('#local').removeAttribute('disabled');   $('#local').setAttribute('required','true');
+      }else if(ROLE==='supervisor'){
+        // Supervisor: elige empleado; local fijado a su local
+        $('#empleado').value='';      $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
+        $('#local').value=USER_LOCAL; $('#local').setAttribute('disabled','true'); $('#local').setAttribute('required','true');
       }else{ // empleado
         $('#empleado').value=USERNAME; $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
-        $('#local').value=''; $('#local').setAttribute('disabled','true'); $('#local').removeAttribute('required');
+        $('#local').value='';          $('#local').setAttribute('disabled','true');    $('#local').removeAttribute('required');
       }
 
       $('#festivo').value=''; $('#horas').value=8; $('#devolucion').value=''; $('#devuelto').checked=false; $('#notas').value='';
-      modal.showModal();
+      openModalSafe();
     }
 
     function openEdit(id){
@@ -277,12 +310,12 @@
       if(ROLE==='admin'){
         $('#empleado').value=r.empleado; $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
         $('#local').value=r.local||'';   $('#local').removeAttribute('disabled');   $('#local').setAttribute('required','true');
-      }else if(ROLE==='empleado'){
-        $('#empleado').value=USERNAME;   $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
-        $('#local').value=r.local||'';   $('#local').setAttribute('disabled','true');   $('#local').removeAttribute('required');
-      }else{ // supervisor (no crea, pero puede editar si su local lo permite; lo valida backend)
+      }else if(ROLE==='supervisor'){
         $('#empleado').value=r.empleado; $('#empleado').removeAttribute('disabled'); $('#empleado').setAttribute('required','true');
-        $('#local').value=r.local||'';   $('#local').setAttribute('disabled','true');   $('#local').removeAttribute('required');
+        $('#local').value=USER_LOCAL;    $('#local').setAttribute('disabled','true'); $('#local').setAttribute('required','true');
+      }else{ // empleado
+        $('#empleado').value=USERNAME;   $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
+        $('#local').value=r.local||'';   $('#local').setAttribute('disabled','true');    $('#local').removeAttribute('required');
       }
 
       $('#festivo').value=r.festivo;
@@ -290,37 +323,83 @@
       $('#devolucion').value=r.devolucion||'';
       $('#devuelto').checked=!!r.devuelto;
       $('#notas').value=r.notas||'';
-      modal.showModal();
+      openModalSafe();
     }
 
     document.getElementById('form').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      if(ROLE==='supervisor'){ alert('No permitido para supervisores'); return; }
 
-      const empleado = (ROLE==='admin') ? $('#empleado').value.trim() : USERNAME;
+      const empleado = (ROLE==='admin') ? $('#empleado').value.trim()
+                     : (ROLE==='supervisor') ? $('#empleado').value.trim()
+                     : USERNAME;
+
       const festivo  = $('#festivo').value;
       const horas    = Number($('#horas').value||0);
       const devolucion = $('#devolucion').value || undefined;
       const devuelto   = $('#devuelto').checked;
       const notas      = $('#notas').value.trim() || undefined;
-      const local      = (ROLE==='admin') ? $('#local').value.trim() : '';
 
-      // VALIDACIONES extra para admin
-      if(ROLE==='admin'){
-        if(!empleado){ alert('El campo Empleado es obligatorio.'); return; }
-        if(!local){ alert('El campo Local es obligatorio.'); return; }
-      }
-      if(!festivo){ alert('Indica la fecha del festivo trabajado.'); return; }
-      if(!(horas>0)){ alert('Indica las horas trabajadas (> 0).'); return; }
+      // Local: admin lo indica; supervisor su local; empleado vacío (lo maneja el backend)
+      const local = (ROLE==='admin') ? $('#local').value.trim()
+                 : (ROLE==='supervisor') ? USER_LOCAL
+                 : '';
+
+      // Validaciones
+      if(ROLE!=='empleado' && !empleado){ alert('Empleado es obligatorio'); return; }
+      if(ROLE==='admin' && !local){ alert('Local es obligatorio'); return; }
+      if(!festivo){ alert('Indica la fecha del festivo'); return; }
+      if(!(horas>0)){ alert('Indica horas > 0'); return; }
 
       const rec = {empleado, festivo, horas, devolucion, devuelto, notas, local};
 
       try{
         if(EDIT_ID){ rec.id=EDIT_ID; await api('update',{record:rec}); }
         else{ await api('add',{record:rec}); }
-        modal.close(); await loadData();
+        closeModalSafe();
+        await loadData();
       }catch(err){ alert(err.message); }
     });
+
+    // Export/Import/Print
+    document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
+    document.getElementById('btnExport').addEventListener('click', ()=>{
+      const header = ['id','empleado','festivo','horas','devolucion','devuelto','notas','local'];
+      const rows = DATA.map(r=> header.map(k=> JSON.stringify(r[k] ?? '')));
+      const csv = [header.join(','), ...rows.map(r=> r.join(','))].join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'festivos.csv'; a.click(); URL.revokeObjectURL(a.href);
+    });
+    document.getElementById('fileImport').addEventListener('change', async (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      const text = await file.text();
+      const lines = String(text).split(/\r?\n/).filter(Boolean);
+      const header = lines.shift().split(',');
+      const idx = (k)=> header.indexOf(k);
+      for(const line of lines){
+        const cols = parseCsvLine(line);
+        const rec = {
+          empleado: cols[idx('empleado')]||'',
+          festivo: cols[idx('festivo')]||'',
+          horas: Number(cols[idx('horas')]||0),
+          devolucion: cols[idx('devolucion')]||undefined,
+          devuelto: (String(cols[idx('devuelto')]||'').toLowerCase()==='true'),
+          notas: cols[idx('notas')]||undefined,
+          local: cols[idx('local')]||''
+        };
+        try{ await api('add',{record:rec}); }catch(e2){ alert(e2.message); }
+      }
+      e.target.value=''; await loadData();
+    });
+    function parseCsvLine(line){
+      const out=[]; let cur=''; let inQ=false;
+      for(let i=0;i<line.length;i++){
+        const ch=line[i];
+        if(ch=='"'){ if(inQ && line[i+1]=='"'){ cur+='"'; i++; } else { inQ=!inQ; } }
+        else if(ch===',' && !inQ){ out.push(cur); cur=''; }
+        else { cur+=ch; }
+      }
+      out.push(cur); return out;
+    }
   </script>
 </body>
 </html>
