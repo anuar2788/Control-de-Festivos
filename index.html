@@ -5,25 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Control de Festivos</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    html,body{height:100%; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial;}
-    .card{ background:#fff; border-radius:1rem; box-shadow:0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06); }
-    .btn{ padding:.5rem .75rem; border-radius:.75rem; border:1px solid #e2e8f0; transition:.15s; }
-    .btn:hover{ background:#f8fafc } .btn:active{ transform:scale(.99) }
-    .btn-primary{ background:#000; color:#fff; border-color:#000 } .btn-primary:hover{ background:rgba(0,0,0,.9) }
-    .input{ width:100%; border:1px solid #cbd5e1; border-radius:.75rem; padding:.5rem .75rem; outline:none }
-    .input:focus{ box-shadow:0 0 0 3px rgba(148,163,184,.35) }
-    .th{ text-align:left; font-size:.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.05em }
-    .td{ font-size:.9rem; color:#334155 }
-    .chip{ padding:.25rem .5rem; border-radius:999px; background:#f6f7f9; font-size:.75rem }
-    .switch {position: relative; display: inline-block; width: 42px; height: 24px}
+    html,body{height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;}
+    .card{background:#fff;border-radius:1rem;border:1px solid #e5e7eb}
+    .btn{padding:.5rem .75rem;border-radius:.75rem;border:1px solid #e2e8f0;transition:.15s}
+    .btn:hover{background:#f8fafc}.btn:active{transform:scale(.99)}
+    .btn-primary{background:#000;color:#fff;border-color:#000}.btn-primary:hover{background:rgba(0,0,0,.9)}
+    .input{width:100%;border:1px solid #cbd5e1;border-radius:.75rem;padding:.5rem .75rem;outline:none}
+    .input:focus{box-shadow:0 0 0 3px rgba(148,163,184,.35)}
+    .th{text-align:left;font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+    .td{font-size:.9rem;color:#334155}
+    .chip{padding:.25rem .5rem;border-radius:999px;background:#f6f7f9;font-size:.75rem}
+    .switch{position:relative;display:inline-block;width:42px;height:24px}
     .switch input{opacity:0;width:0;height:0}
     .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e5e7eb;transition:.2s;border-radius:24px}
     .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.2s;border-radius:50%}
-    input:checked + .slider{background:#16a34a} input:checked + .slider:before{transform:translateX(18px)}
+    input:checked + .slider{background:#16a34a}input:checked + .slider:before{transform:translateX(18px)}
   </style>
 </head>
 <body class="bg-slate-50 min-h-full">
@@ -170,6 +167,9 @@
     const $$= (s, el=document)=> Array.from(el.querySelectorAll(s));
     const modal = document.getElementById('modal');
 
+    // Debounce para filtros
+    const debounce = (fn,ms=200)=>{let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}}
+
     // ===== LOGIN =====
     document.getElementById('btnLogin').addEventListener('click', async ()=>{
       const usuario = document.getElementById('lUser').value.trim();
@@ -183,6 +183,10 @@
         $('#uName').textContent = USERNAME; $('#uRole').textContent = ROLE;
         if(ROLE!=='admin'){ const fEmp = $('#fEmpleado'); fEmp.value = USERNAME; fEmp.setAttribute('disabled','true'); }
         $('#loginCard').classList.add('hidden'); $('#app').classList.remove('hidden');
+
+        // pintar rápido con cache local si existe
+        const cached = localStorage.getItem('festivos');
+        if(cached){ DATA = JSON.parse(cached); render(); }
         await loadData();
       }catch(err){ $('#lMsg').textContent = 'Acceso denegado ('+err.message+')'; }
     });
@@ -198,7 +202,12 @@
       if(!json.ok) throw new Error(json.error||'API_ERROR');
       return json;
     }
-    async function loadData(){ const { data } = await api('list'); DATA = data; render(); }
+    async function loadData(){
+      const { data } = await api('list');
+      DATA = data;
+      localStorage.setItem('festivos', JSON.stringify(DATA));
+      render();
+    }
 
     // ===== RENDER =====
     function render(){
@@ -220,6 +229,7 @@
       });
 
       const tbody = $('#tbody'); tbody.innerHTML='';
+      const frag = document.createDocumentFragment();
       for(const r of filtered){
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50';
@@ -235,8 +245,10 @@
             ${!r.devuelto ? `<button class="btn" data-done="${r.id}">Marcar devuelto</button>` : ''}
             <button class="btn" data-del="${r.id}">Borrar</button>
           </td>`;
-        tbody.appendChild(tr);
+        frag.appendChild(tr);
       }
+      tbody.appendChild(frag);
+
       $$('[data-edit]').forEach(b=>b.addEventListener('click', ()=> openEdit(b.getAttribute('data-edit'))));
       $$('[data-done]').forEach(b=>b.addEventListener('click', async ()=>{
         const id = b.getAttribute('data-done');
@@ -273,9 +285,7 @@
             <span class="chip">Pend: ${(v.pendH/HORAS_POR_DIA).toFixed(2)} d</span>
           </div>
           <div class="mt-2 text-sm text-slate-600">Pendientes: ${v.pendH.toFixed(2)} h • Devueltas: ${v.devH.toFixed(2)} h</div>
-          <div class="mt-3 flex gap-2">
-            <button class="btn" data-filter-emp="${emp}">Ver registros</button>
-          </div>`;
+          <div class="mt-3 flex gap-2"><button class="btn" data-filter-emp="${emp}">Ver registros</button></div>`;
         wrap.appendChild(card);
       });
       $$('[data-filter-emp]').forEach(b=>b.addEventListener('click', ()=>{
@@ -291,18 +301,22 @@
     function openEdit(id){
       const r = DATA.find(x=>x.id===id); if(!r) return;
       EDIT_ID = id;
-      $('#modalTitle').textContent='Editar registro'; $('#btnDelete').classList.remove('hidden');
-      $('#empleado').value=r.empleado; $('#festivo').value=r.festivo; $('#horas').value=r.horas;
-      $('#devolucion').value=r.devolucion||''; $('#devuelto').checked=!!r.devuelto; $('#notas').value=r.notas||'';
-      if(ROLE!=='admin'){ $('#empleado').value = USERNAME; $('#empleado').setAttribute('disabled','true'); }
+      document.getElementById('modalTitle').textContent='Editar registro'; document.getElementById('btnDelete').classList.remove('hidden');
+      document.getElementById('empleado').value=r.empleado;
+      document.getElementById('festivo').value=r.festivo;
+      document.getElementById('horas').value=r.horas;
+      document.getElementById('devolucion').value=r.devolucion||'';
+      document.getElementById('devuelto').checked=!!r.devuelto;
+      document.getElementById('notas').value=r.notas||'';
+      if(ROLE!=='admin'){ document.getElementById('empleado').value = USERNAME; document.getElementById('empleado').setAttribute('disabled','true'); }
       modal.showModal();
     }
     function openCreate(){
       EDIT_ID = null;
-      $('#modalTitle').textContent='Añadir registro'; $('#btnDelete').classList.add('hidden');
-      $('#empleado').value= ROLE==='admin' ? '' : USERNAME;
-      if(ROLE!=='admin'){ $('#empleado').setAttribute('disabled','true'); } else { $('#empleado').removeAttribute('disabled'); }
-      $('#festivo').value=''; $('#horas').value=HORAS_POR_DIA; $('#devolucion').value=''; $('#devuelto').checked=false; $('#notas').value='';
+      document.getElementById('modalTitle').textContent='Añadir registro'; document.getElementById('btnDelete').classList.add('hidden');
+      document.getElementById('empleado').value= ROLE==='admin' ? '' : USERNAME;
+      if(ROLE!=='admin'){ document.getElementById('empleado').setAttribute('disabled','true'); } else { document.getElementById('empleado').removeAttribute('disabled'); }
+      document.getElementById('festivo').value=''; document.getElementById('horas').value=HORAS_POR_DIA; document.getElementById('devolucion').value=''; document.getElementById('devuelto').checked=false; document.getElementById('notas').value='';
       modal.showModal();
     }
     document.getElementById('btnOpenModal').addEventListener('click', openCreate);
@@ -310,12 +324,12 @@
     document.getElementById('form').addEventListener('submit', async (e)=>{
       e.preventDefault();
       const rec = {
-        empleado: ROLE==='admin' ? $('#empleado').value.trim() : USERNAME,
-        festivo: $('#festivo').value,
-        horas: Number($('#horas').value||0),
-        devolucion: $('#devolucion').value || undefined,
-        devuelto: $('#devuelto').checked,
-        notas: $('#notas').value.trim() || undefined,
+        empleado: ROLE==='admin' ? document.getElementById('empleado').value.trim() : USERNAME,
+        festivo: document.getElementById('festivo').value,
+        horas: Number(document.getElementById('horas').value||0),
+        devolucion: document.getElementById('devolucion').value || undefined,
+        devuelto: document.getElementById('devuelto').checked,
+        notas: document.getElementById('notas').value.trim() || undefined,
       };
       if(EDIT_ID){ rec.id = EDIT_ID; await api('update', {record: rec}); }
       else{ await api('add', {record: rec}); }
@@ -325,14 +339,14 @@
       if(!EDIT_ID) return; await api('delete', {id: EDIT_ID}); modal.close(); await loadData();
     });
 
-    // Filtros
-    document.getElementById('fEmpleado').addEventListener('input', render);
+    // Filtros (debounced)
+    document.getElementById('fEmpleado').addEventListener('input', debounce(render,200));
     document.getElementById('fEstado').addEventListener('change', render);
     document.getElementById('fDesde').addEventListener('change', render);
     document.getElementById('fHasta').addEventListener('change', render);
     document.getElementById('btnClearFilters').addEventListener('click', ()=>{
-      if(ROLE==='admin'){ $('#fEmpleado').value=''; } else { $('#fEmpleado').value=USERNAME; }
-      $('#fEstado').value='todos'; $('#fDesde').value=''; $('#fHasta').value=''; render();
+      if(ROLE==='admin'){ document.getElementById('fEmpleado').value=''; } else { document.getElementById('fEmpleado').value=USERNAME; }
+      document.getElementById('fEstado').value='todos'; document.getElementById('fDesde').value=''; document.getElementById('fHasta').value=''; render();
     });
 
     // Exportar / Importar
@@ -345,7 +359,6 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'festivos.csv'; a.click(); URL.revokeObjectURL(a.href);
     });
     document.getElementById('fileImport').addEventListener('change', async (e)=>{
-      // Import solo admin
       if(ROLE!=='admin'){ alert('Solo admin puede importar.'); e.target.value=''; return; }
       const file = e.target.files[0]; if(!file) return;
       const text = await file.text();
@@ -370,10 +383,8 @@
       const out=[]; let cur=''; let inQ=false;
       for(let i=0;i<line.length;i++){
         const ch=line[i];
-        if(ch=='"'){
-          if(inQ && line[i+1]=='"'){ cur+='"'; i++; }
-          else { inQ=!inQ; }
-        } else if(ch===',' && !inQ){ out.push(cur); cur=''; }
+        if(ch=='"'){ if(inQ && line[i+1]=='"'){ cur+='"'; i++; } else { inQ=!inQ; } }
+        else if(ch===',' && !inQ){ out.push(cur); cur=''; }
         else { cur+=ch; }
       }
       out.push(cur); return out;
