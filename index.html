@@ -307,22 +307,62 @@
     function openEdit(id){
       const r = DATA.find(x=>x.id===id); if(!r) return;
       EDIT_ID = id;
-      $('#modalTitle').textContent='Editar registro'; $('#btnDelete').classList.remove('hidden');
-      $('#empleado').value=r.empleado; $('#festivo').value=r.festivo; $('#horas').value=r.horas;
-      $('#devolucion').value=r.devolucion||''; $('#devuelto').checked=!!r.devuelto; $('#notas').value=r.notas||'';
-      $('#local').value = r.local || (ROLE==='supervisor' ? USER_LOCAL : '');
-      if(ROLE!=='admin'){ $('#empleado').value = USERNAME; $('#empleado').setAttribute('disabled','true'); } else { $('#empleado').removeAttribute('disabled'); }
-      if(ROLE==='supervisor'){ $('#local').value = USER_LOCAL; $('#local').setAttribute('disabled','true'); } else { $('#local').removeAttribute('disabled'); }
+      document.getElementById('modalTitle').textContent='Editar registro'; document.getElementById('btnDelete').classList.remove('hidden');
+
+      // Empleado: admin y supervisor pueden editar; empleado solo su propio usuario
+      if(ROLE==='empleado'){
+        document.getElementById('empleado').value = USERNAME;
+        document.getElementById('empleado').setAttribute('disabled','true');
+      }else{
+        document.getElementById('empleado').value = r.empleado;
+        document.getElementById('empleado').removeAttribute('disabled');
+      }
+
+      document.getElementById('festivo').value=r.festivo;
+      document.getElementById('horas').value=r.horas;
+      document.getElementById('devolucion').value=r.devolucion||'';
+      document.getElementById('devuelto').checked=!!r.devuelto;
+      document.getElementById('notas').value=r.notas||'';
+
+      // Local: admin puede editar; supervisor forzado a su local
+      if(ROLE==='supervisor'){
+        document.getElementById('local').value = USER_LOCAL;
+        document.getElementById('local').setAttribute('disabled','true');
+      }else{
+        document.getElementById('local').value = r.local || '';
+        document.getElementById('local').removeAttribute('disabled');
+      }
+
       modal.showModal();
     }
     function openCreate(){
       EDIT_ID = null;
-      $('#modalTitle').textContent='Añadir registro'; $('#btnDelete').classList.add('hidden');
-      $('#empleado').value= ROLE==='admin' ? '' : USERNAME;
-      $('#festivo').value=''; $('#horas').value=HORAS_POR_DIA; $('#devolucion').value=''; $('#devuelto').checked=false; $('#notas').value='';
-      $('#local').value = ROLE==='supervisor' ? USER_LOCAL : '';
-      if(ROLE!=='admin'){ $('#empleado').setAttribute('disabled','true'); } else { $('#empleado').removeAttribute('disabled'); }
-      if(ROLE==='supervisor'){ $('#local').setAttribute('disabled','true'); } else { $('#local').removeAttribute('disabled'); }
+      document.getElementById('modalTitle').textContent='Añadir registro'; document.getElementById('btnDelete').classList.add('hidden');
+
+      // Empleado: admin/supervisor pueden elegir; empleado bloqueado a su usuario
+      if(ROLE==='empleado'){
+        document.getElementById('empleado').value = USERNAME;
+        document.getElementById('empleado').setAttribute('disabled','true');
+      }else{
+        document.getElementById('empleado').value = '';
+        document.getElementById('empleado').removeAttribute('disabled');
+      }
+
+      document.getElementById('festivo').value='';
+      document.getElementById('horas').value=HORAS_POR_DIA;
+      document.getElementById('devolucion').value='';
+      document.getElementById('devuelto').checked=false;
+      document.getElementById('notas').value='';
+
+      // Local: supervisor fijo a su local; admin libre
+      if(ROLE==='supervisor'){
+        document.getElementById('local').value = USER_LOCAL;
+        document.getElementById('local').setAttribute('disabled','true');
+      }else{
+        document.getElementById('local').value = '';
+        document.getElementById('local').removeAttribute('disabled');
+      }
+
       modal.showModal();
     }
     document.getElementById('btnOpenModal').addEventListener('click', openCreate);
@@ -330,13 +370,14 @@
     document.getElementById('form').addEventListener('submit', async (e)=>{
       e.preventDefault();
       const rec = {
-        empleado: ROLE==='admin' ? $('#empleado').value.trim() : USERNAME,
-        festivo: $('#festivo').value,
-        horas: Number($('#horas').value||0),
-        devolucion: $('#devolucion').value || undefined,
-        devuelto: $('#devuelto').checked,
-        notas: $('#notas').value.trim() || undefined,
-        local: ROLE==='admin' ? $('#local').value.trim() : (ROLE==='supervisor' ? USER_LOCAL : ($('#local').value.trim() || ''))
+        empleado: (ROLE==='admin' || ROLE==='supervisor') ? document.getElementById('empleado').value.trim() : USERNAME,
+        festivo: document.getElementById('festivo').value,
+        horas: Number(document.getElementById('horas').value||0),
+        devolucion: document.getElementById('devolucion').value || undefined,
+        devuelto: document.getElementById('devuelto').checked,
+        notas: document.getElementById('notas').value.trim() || undefined,
+        local: ROLE==='admin' ? document.getElementById('local').value.trim()
+             : (ROLE==='supervisor' ? USER_LOCAL : (document.getElementById('local').value.trim() || ''))
       };
       if(EDIT_ID){ rec.id = EDIT_ID; await api('update', {record: rec}); }
       else{ await api('add', {record: rec}); }
@@ -353,12 +394,12 @@
     document.getElementById('fHasta').addEventListener('change', render);
     document.getElementById('fLocal').addEventListener('input', debounce(render,200));
     document.getElementById('btnClearFilters').addEventListener('click', ()=>{
-      if(ROLE==='admin'){ $('#fEmpleado').value=''; $('#fLocal').value=''; }
+      if(ROLE==='admin'){ document.getElementById('fEmpleado').value=''; document.getElementById('fLocal').value=''; }
       else{
-        $('#fEmpleado').value=USERNAME;
-        if(ROLE==='supervisor'){ $('#fLocal').value=USER_LOCAL; } else { $('#fLocal').value=''; }
+        document.getElementById('fEmpleado').value=USERNAME;
+        if(ROLE==='supervisor'){ document.getElementById('fLocal').value=USER_LOCAL; } else { document.getElementById('fLocal').value=''; }
       }
-      $('#fEstado').value='todos'; $('#fDesde').value=''; $('#fHasta').value=''; render();
+      document.getElementById('fEstado').value='todos'; document.getElementById('fDesde').value=''; document.getElementById('fHasta').value=''; render();
     });
 
     // Exportar / Importar
@@ -371,7 +412,6 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'festivos.csv'; a.click(); URL.revokeObjectURL(a.href);
     });
     document.getElementById('fileImport').addEventListener('change', async (e)=>{
-      // Import solo admin
       if(ROLE!=='admin'){ alert('Solo admin puede importar.'); e.target.value=''; return; }
       const file = e.target.files[0]; if(!file) return;
       const text = await file.text();
