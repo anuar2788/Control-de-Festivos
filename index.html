@@ -40,7 +40,6 @@
       try{
         const res = await fetch(API_URL, {
           method:"POST",
-          headers:{"Content-Type":"application/json"},
           body: JSON.stringify({action:"login", usuario, password})
         });
         const json = await res.json();
@@ -64,7 +63,10 @@
 
     async function api(action, payload={}){
       const body = Object.assign({action, token:TOKEN}, payload);
-      const res = await fetch(API_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+      const res = await fetch(API_URL, {
+        method:"POST",
+        body: JSON.stringify(body)
+      });
       const json = await res.json();
       if(!json.ok) throw new Error(json.error||"API_ERROR");
       return json;
