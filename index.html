@@ -41,7 +41,10 @@
       <header class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold">Dashboard de Festivos</h1>
-          <p class="text-slate-600">Usuario: <span id="uName"></span> • Rol: <span id="uRole"></span></p>
+          <p class="text-slate-600">
+            Usuario: <span id="uName"></span> • Rol: <span id="uRole"></span>
+            <span id="uLocalWrap" class="ml-2 hidden">• Local: <span id="uLocal"></span></span>
+          </p>
         </div>
         <div class="flex items-center gap-2">
           <button id="btnExport" class="btn">Exportar CSV</button>
@@ -73,7 +76,7 @@
       </section>
 
       <section class="card p-5 mt-4">
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
           <input id="fEmpleado" class="input" placeholder="Filtrar por empleado" />
           <select id="fEstado" class="input">
             <option value="todos">Todos los estados</option>
@@ -82,6 +85,7 @@
           </select>
           <input id="fDesde" class="input" type="date" />
           <input id="fHasta" class="input" type="date" />
+          <input id="fLocal" class="input" placeholder="Filtrar por local" />
           <button id="btnClearFilters" class="btn">Limpiar filtros</button>
         </div>
       </section>
@@ -94,9 +98,10 @@
                 <th class="th py-2">Empleado</th>
                 <th class="th py-2">Festivo trabajado</th>
                 <th class="th py-2">Horas</th>
-                <th class="th py-2">Devolución programada</th>
+                <th class="th py-2">Devolución</th>
                 <th class="th py-2">Estado</th>
                 <th class="th py-2">Notas</th>
+                <th class="th py-2">Local</th>
                 <th class="th py-2 text-right">Acciones</th>
               </tr>
             </thead>
@@ -143,6 +148,10 @@
           <label class="text-sm text-slate-600">Devuelto</label>
           <label class="switch"><input id="devuelto" type="checkbox"><span class="slider"></span></label>
         </div>
+        <div>
+          <label class="text-sm text-slate-600">Local</label>
+          <input id="local" class="input" placeholder="Cañada / Oasis" />
+        </div>
         <div class="md:col-span-2">
           <label class="text-sm text-slate-600">Notas</label>
           <input id="notas" class="input" placeholder="Opcional" />
@@ -161,14 +170,12 @@
     const HORAS_POR_DIA = 8;
 
     // Estado
-    let TOKEN=null, ROLE='empleado', USERNAME='', DATA=[], EDIT_ID=null;
+    let TOKEN=null, ROLE='empleado', USERNAME='', USER_LOCAL='', DATA=[], EDIT_ID=null;
 
     const $ = (s, el=document)=> el.querySelector(s);
     const $$= (s, el=document)=> Array.from(el.querySelectorAll(s));
     const modal = document.getElementById('modal');
-
-    // Debounce para filtros
-    const debounce = (fn,ms=200)=>{let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}}
+    const debounce = (fn,ms=200)=>{let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
 
     // ===== LOGIN =====
     document.getElementById('btnLogin').addEventListener('click', async ()=>{
@@ -179,19 +186,20 @@
         const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({action:'login', usuario, password}) });
         const json = await res.json();
         if(!json.ok) throw new Error(json.error||'Error');
-        TOKEN=json.token; ROLE=json.role; USERNAME=usuario;
+        TOKEN=json.token; ROLE=json.role; USERNAME=usuario; USER_LOCAL=json.local||'';
         $('#uName').textContent = USERNAME; $('#uRole').textContent = ROLE;
+        if(ROLE==='supervisor'){ $('#uLocal').textContent = USER_LOCAL; $('#uLocalWrap').classList.remove('hidden'); }
         if(ROLE!=='admin'){ const fEmp = $('#fEmpleado'); fEmp.value = USERNAME; fEmp.setAttribute('disabled','true'); }
+        if(ROLE==='supervisor'){ const fLoc = $('#fLocal'); fLoc.value = USER_LOCAL; fLoc.setAttribute('disabled','true'); }
+
         $('#loginCard').classList.add('hidden'); $('#app').classList.remove('hidden');
 
-        // pintar rápido con cache local si existe
-        const cached = localStorage.getItem('festivos');
-        if(cached){ DATA = JSON.parse(cached); render(); }
+        const cached = localStorage.getItem('festivos'); if(cached){ DATA = JSON.parse(cached); render(); }
         await loadData();
       }catch(err){ $('#lMsg').textContent = 'Acceso denegado ('+err.message+')'; }
     });
     document.getElementById('btnLogout').addEventListener('click', ()=>{
-      TOKEN=null; ROLE='empleado'; USERNAME=''; DATA=[]; render();
+      TOKEN=null; ROLE='empleado'; USERNAME=''; USER_LOCAL=''; DATA=[]; render();
       $('#app').classList.add('hidden'); $('#loginCard').classList.remove('hidden');
     });
 
@@ -202,12 +210,7 @@
       if(!json.ok) throw new Error(json.error||'API_ERROR');
       return json;
     }
-    async function loadData(){
-      const { data } = await api('list');
-      DATA = data;
-      localStorage.setItem('festivos', JSON.stringify(DATA));
-      render();
-    }
+    async function loadData(){ const { data } = await api('list'); DATA = data; localStorage.setItem('festivos', JSON.stringify(DATA)); render(); }
 
     // ===== RENDER =====
     function render(){
@@ -217,11 +220,13 @@
       const fEstado   = $('#fEstado').value;
       const fDesde    = $('#fDesde').value ? new Date($('#fDesde').value) : null;
       const fHasta    = $('#fHasta').value ? new Date($('#fHasta').value) : null;
+      const fLocal    = ($('#fLocal').value||'').trim().toLowerCase();
 
       const filtered = DATA.filter(r=>{
         if (fEmpleado && !r.empleado.toLowerCase().includes(fEmpleado)) return false;
         if (fEstado==='pendiente' && r.devuelto) return false;
         if (fEstado==='devuelto' && !r.devuelto) return false;
+        if (fLocal && !String(r.local||'').toLowerCase().includes(fLocal)) return false;
         const dFest = new Date(r.festivo);
         if (fDesde && dFest < fDesde) return false;
         if (fHasta){ const dH = new Date(fHasta); dH.setHours(23,59,59,999); if (dFest > dH) return false; }
@@ -240,6 +245,7 @@
           <td class="td">${r.devolucion ? fmtDate(r.devolucion) : '<span class="chip">Sin programar</span>'}</td>
           <td class="td">${r.devuelto ? '<span class="chip">Devuelto</span>' : '<span class="chip">Pendiente</span>'}</td>
           <td class="td">${r.notas ? escapeHtml(r.notas) : ''}</td>
+          <td class="td">${r.local ? escapeHtml(r.local) : ''}</td>
           <td class="td text-right">
             <button class="btn" data-edit="${r.id}">Editar</button>
             ${!r.devuelto ? `<button class="btn" data-done="${r.id}">Marcar devuelto</button>` : ''}
@@ -301,22 +307,22 @@
     function openEdit(id){
       const r = DATA.find(x=>x.id===id); if(!r) return;
       EDIT_ID = id;
-      document.getElementById('modalTitle').textContent='Editar registro'; document.getElementById('btnDelete').classList.remove('hidden');
-      document.getElementById('empleado').value=r.empleado;
-      document.getElementById('festivo').value=r.festivo;
-      document.getElementById('horas').value=r.horas;
-      document.getElementById('devolucion').value=r.devolucion||'';
-      document.getElementById('devuelto').checked=!!r.devuelto;
-      document.getElementById('notas').value=r.notas||'';
-      if(ROLE!=='admin'){ document.getElementById('empleado').value = USERNAME; document.getElementById('empleado').setAttribute('disabled','true'); }
+      $('#modalTitle').textContent='Editar registro'; $('#btnDelete').classList.remove('hidden');
+      $('#empleado').value=r.empleado; $('#festivo').value=r.festivo; $('#horas').value=r.horas;
+      $('#devolucion').value=r.devolucion||''; $('#devuelto').checked=!!r.devuelto; $('#notas').value=r.notas||'';
+      $('#local').value = r.local || (ROLE==='supervisor' ? USER_LOCAL : '');
+      if(ROLE!=='admin'){ $('#empleado').value = USERNAME; $('#empleado').setAttribute('disabled','true'); } else { $('#empleado').removeAttribute('disabled'); }
+      if(ROLE==='supervisor'){ $('#local').value = USER_LOCAL; $('#local').setAttribute('disabled','true'); } else { $('#local').removeAttribute('disabled'); }
       modal.showModal();
     }
     function openCreate(){
       EDIT_ID = null;
-      document.getElementById('modalTitle').textContent='Añadir registro'; document.getElementById('btnDelete').classList.add('hidden');
-      document.getElementById('empleado').value= ROLE==='admin' ? '' : USERNAME;
-      if(ROLE!=='admin'){ document.getElementById('empleado').setAttribute('disabled','true'); } else { document.getElementById('empleado').removeAttribute('disabled'); }
-      document.getElementById('festivo').value=''; document.getElementById('horas').value=HORAS_POR_DIA; document.getElementById('devolucion').value=''; document.getElementById('devuelto').checked=false; document.getElementById('notas').value='';
+      $('#modalTitle').textContent='Añadir registro'; $('#btnDelete').classList.add('hidden');
+      $('#empleado').value= ROLE==='admin' ? '' : USERNAME;
+      $('#festivo').value=''; $('#horas').value=HORAS_POR_DIA; $('#devolucion').value=''; $('#devuelto').checked=false; $('#notas').value='';
+      $('#local').value = ROLE==='supervisor' ? USER_LOCAL : '';
+      if(ROLE!=='admin'){ $('#empleado').setAttribute('disabled','true'); } else { $('#empleado').removeAttribute('disabled'); }
+      if(ROLE==='supervisor'){ $('#local').setAttribute('disabled','true'); } else { $('#local').removeAttribute('disabled'); }
       modal.showModal();
     }
     document.getElementById('btnOpenModal').addEventListener('click', openCreate);
@@ -324,12 +330,13 @@
     document.getElementById('form').addEventListener('submit', async (e)=>{
       e.preventDefault();
       const rec = {
-        empleado: ROLE==='admin' ? document.getElementById('empleado').value.trim() : USERNAME,
-        festivo: document.getElementById('festivo').value,
-        horas: Number(document.getElementById('horas').value||0),
-        devolucion: document.getElementById('devolucion').value || undefined,
-        devuelto: document.getElementById('devuelto').checked,
-        notas: document.getElementById('notas').value.trim() || undefined,
+        empleado: ROLE==='admin' ? $('#empleado').value.trim() : USERNAME,
+        festivo: $('#festivo').value,
+        horas: Number($('#horas').value||0),
+        devolucion: $('#devolucion').value || undefined,
+        devuelto: $('#devuelto').checked,
+        notas: $('#notas').value.trim() || undefined,
+        local: ROLE==='admin' ? $('#local').value.trim() : (ROLE==='supervisor' ? USER_LOCAL : ($('#local').value.trim() || ''))
       };
       if(EDIT_ID){ rec.id = EDIT_ID; await api('update', {record: rec}); }
       else{ await api('add', {record: rec}); }
@@ -339,26 +346,32 @@
       if(!EDIT_ID) return; await api('delete', {id: EDIT_ID}); modal.close(); await loadData();
     });
 
-    // Filtros (debounced)
+    // Filtros
     document.getElementById('fEmpleado').addEventListener('input', debounce(render,200));
     document.getElementById('fEstado').addEventListener('change', render);
     document.getElementById('fDesde').addEventListener('change', render);
     document.getElementById('fHasta').addEventListener('change', render);
+    document.getElementById('fLocal').addEventListener('input', debounce(render,200));
     document.getElementById('btnClearFilters').addEventListener('click', ()=>{
-      if(ROLE==='admin'){ document.getElementById('fEmpleado').value=''; } else { document.getElementById('fEmpleado').value=USERNAME; }
-      document.getElementById('fEstado').value='todos'; document.getElementById('fDesde').value=''; document.getElementById('fHasta').value=''; render();
+      if(ROLE==='admin'){ $('#fEmpleado').value=''; $('#fLocal').value=''; }
+      else{
+        $('#fEmpleado').value=USERNAME;
+        if(ROLE==='supervisor'){ $('#fLocal').value=USER_LOCAL; } else { $('#fLocal').value=''; }
+      }
+      $('#fEstado').value='todos'; $('#fDesde').value=''; $('#fHasta').value=''; render();
     });
 
     // Exportar / Importar
     document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
     document.getElementById('btnExport').addEventListener('click', ()=>{
-      const header = ['id','empleado','festivo','horas','devolucion','devuelto','notas'];
+      const header = ['id','empleado','festivo','horas','devolucion','devuelto','notas','local'];
       const rows = DATA.map(r=> header.map(k=> JSON.stringify(r[k] ?? '')));
       const csv = [header.join(','), ...rows.map(r=> r.join(','))].join('\n');
       const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'festivos.csv'; a.click(); URL.revokeObjectURL(a.href);
     });
     document.getElementById('fileImport').addEventListener('change', async (e)=>{
+      // Import solo admin
       if(ROLE!=='admin'){ alert('Solo admin puede importar.'); e.target.value=''; return; }
       const file = e.target.files[0]; if(!file) return;
       const text = await file.text();
@@ -368,12 +381,13 @@
       for(const line of lines){
         const cols = parseCsvLine(line);
         const rec = {
-          empleado: cols[idx('empleado')]?.replace(/^\\"|\\"$/g,'') || USERNAME,
+          empleado: cols[idx('empleado')]?.replace(/^\\"|\\"$/g,'') || '',
           festivo: (cols[idx('festivo')]||'').replace(/^\\"|\\"$/g,''),
           horas: Number((cols[idx('horas')]||'0').replace(/^\\"|\\"$/g,'')) || 0,
           devolucion: (cols[idx('devolucion')]||'').replace(/^\\"|\\"$/g,'') || undefined,
           devuelto: ((cols[idx('devuelto')]||'').replace(/^\\"|\\"$/g,'').toLowerCase()==='true'),
           notas: (cols[idx('notas')]||'').replace(/^\\"|\\"$/g,'') || undefined,
+          local: (cols[idx('local')]||'').replace(/^\\"|\\"$/g,'')
         };
         if(rec.empleado && rec.festivo && rec.horas){ await api('add', {record: rec}); }
       }
