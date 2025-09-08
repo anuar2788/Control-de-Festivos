@@ -1,391 +1,449 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Control de Festivos</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    html,body{height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;}
-    .card{background:#fff;border-radius:1rem;border:1px solid #e5e7eb}
-    .btn{padding:.5rem .75rem;border-radius:.75rem;border:1px solid #e2e8f0;transition:.15s}
-    .btn:hover{background:#f8fafc}.btn:active{transform:scale(.99)}
-    .btn-primary{background:#000;color:#fff;border-color:#000}.btn-primary:hover{background:rgba(0,0,0,.9)}
-    .input{width:100%;border:1px solid #cbd5e1;border-radius:.75rem;padding:.5rem .75rem;outline:none}
-    .input:focus{box-shadow:0 0 0 3px rgba(148,163,184,.35)}
-    .th{text-align:left;font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
-    .td{font-size:.9rem;color:#334155}
-    .chip{padding:.25rem .5rem;border-radius:999px;background:#f6f7f9;font-size:.75rem}
-    .switch{position:relative;display:inline-block;width:42px;height:24px}
-    .switch input{opacity:0;width:0;height:0}
-    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e5e7eb;transition:.15s;border-radius:24px}
-    .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.15s;border-radius:50%}
-    input:checked + .slider{background:#16a34a}input:checked + .slider:before{transform:translateX(18px)}
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Control de Festivos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html,body{height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;}
+    .card{background:#fff;border-radius:1rem;border:1px solid #e5e7eb}
+    .btn{padding:.5rem .75rem;border-radius:.75rem;border:1px solid #e2e8f0;transition:.15s}
+    .btn:hover{background:#f8fafc}.btn:active{transform:scale(.99)}
+    .btn-primary{background:#000;color:#fff;border-color:#000}.btn-primary:hover{background:rgba(0,0,0,.9)}
+    .input{width:100%;border:1px solid #cbd5e1;border-radius:.75rem;padding:.5rem .75rem;outline:none}
+    .input:focus{box-shadow:0 0 0 3px rgba(148,163,184,.35)}
+    .th{text-align:left;font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+    .td{font-size:.9rem;color:#334155}
+    .chip{padding:.25rem .5rem;border-radius:999px;background:#f6f7f9;font-size:.75rem}
+    .switch{position:relative;display:inline-block;width:42px;height:24px}
+    .switch input{opacity:0;width:0;height:0}
+    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e5e7eb;transition:.15s;border-radius:24px}
+    .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.15s;border-radius:50%}
+    input:checked + .slider{background:#16a34a}input:checked + .slider:before{transform:translateX(18px)}
+    .notification { position: fixed; bottom: 1rem; right: 1rem; padding: 1rem; border-radius: 0.5rem; background-color: #333; color: white; z-index: 1000; transition: opacity 0.5s ease-in-out; opacity: 0; }
+  </style>
 </head>
 <body class="bg-slate-50 min-h-full">
-  <div class="max-w-7xl mx-auto p-6 space-y-6">
-    <!-- LOGIN -->
-    <section id="loginCard" class="card p-6 max-w-md mx-auto">
-      <h2 class="text-xl font-semibold mb-4">Acceso</h2>
-      <div class="grid gap-3">
-        <input id="lUser" class="input" placeholder="Usuario" autocomplete="username">
-        <input id="lPass" type="password" class="input" placeholder="Contraseña" autocomplete="current-password">
-        <button id="btnLogin" class="btn-primary">Entrar</button>
-        <div id="lMsg" class="text-sm text-red-600"></div>
-      </div>
-    </section>
+  <div class="max-w-7xl mx-auto p-6 space-y-6">
+        <section id="loginCard" class="card p-6 max-w-md mx-auto">
+      <h2 class="text-xl font-semibold mb-4">Acceso</h2>
+      <div class="grid gap-3">
+        <input id="lUser" class="input" placeholder="Usuario" autocomplete="username">
+        <input id="lPass" type="password" class="input" placeholder="Contraseña" autocomplete="current-password">
+        <button id="btnLogin" class="btn-primary">Entrar</button>
+        <div id="lMsg" class="text-sm text-red-600"></div>
+      </div>
+    </section>
 
-    <!-- APP -->
-    <section id="app" class="hidden">
-      <header class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold">Dashboard de Festivos</h1>
-          <p class="text-slate-600">
-            Usuario: <span id="uName"></span> • Rol: <span id="uRole"></span>
-            <span id="uLocalWrap" class="ml-2 hidden">• Local: <span id="uLocal"></span></span>
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button id="btnExport" class="btn">Exportar CSV</button>
-          <label class="btn cursor-pointer">Importar CSV
-            <input id="fileImport" type="file" accept=".csv" class="hidden" />
-          </label>
-          <button id="btnPrint" class="btn">Imprimir</button>
-          <button id="btnOpenModal" type="button" class="btn-primary">+ Añadir registro</button>
-          <button id="btnLogout" class="btn">Salir</button>
-        </div>
-      </header>
+        <section id="app" class="hidden">
+      <header class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold">Dashboard de Festivos</h1>
+          <p class="text-slate-600">
+            Usuario: <span id="uName"></span> • Rol: <span id="uRole"></span>
+            <span id="uLocalWrap" class="ml-2 hidden">• Local: <span id="uLocal"></span></span>
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnExport" class="btn">Exportar CSV</button>
+          <label class="btn cursor-pointer">Importar CSV
+            <input id="fileImport" type="file" accept=".csv" class="hidden" />
+          </label>
+          <button id="btnPrint" class="btn">Imprimir</button>
+          <button id="btnOpenModal" type="button" class="btn-primary">+ Añadir registro</button>
+          <button id="btnLogout" class="btn">Salir</button>
+        </div>
+      </header>
 
-      <!-- FILTROS -->
-      <section class="card p-5 mt-4">
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
-          <input id="fEmpleado" class="input" placeholder="Filtrar por empleado" />
-          <select id="fEstado" class="input">
-            <option value="todos">Todos</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="devuelto">Devuelto</option>
-          </select>
-          <input id="fDesde" class="input" type="date" />
-          <input id="fHasta" class="input" type="date" />
-          <input id="fLocal" class="input" placeholder="Filtrar por local" />
-          <div class="flex gap-2">
-            <button id="btnApplyFilters" class="btn">Aplicar filtros</button>
-            <button id="btnClearFilters" class="btn">Limpiar filtros</button>
-          </div>
-        </div>
-      </section>
+            <section class="card p-5 mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+          <input id="fEmpleado" class="input" placeholder="Filtrar por empleado" />
+          <select id="fEstado" class="input">
+            <option value="todos">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="devuelto">Devuelto</option>
+          </select>
+          <input id="fDesde" class="input" type="date" />
+          <input id="fHasta" class="input" type="date" />
+          <input id="fLocal" class="input" placeholder="Filtrar por local" />
+          <div class="flex gap-2">
+            <button id="btnApplyFilters" class="btn">Aplicar filtros</button>
+            <button id="btnClearFilters" class="btn">Limpiar filtros</button>
+          </div>
+        </div>
+      </section>
 
-      <!-- TABLA -->
-      <section class="card p-5">
-        <div class="overflow-x-auto">
-          <table class="min-w-full">
-            <thead>
-              <tr class="border-b">
-                <th class="th py-2">Empleado</th>
-                <th class="th py-2">Festivo</th>
-                <th class="th py-2">Horas</th>
-                <th class="th py-2">Devolución</th>
-                <th class="th py-2">Estado</th>
-                <th class="th py-2">Notas</th>
-                <th class="th py-2">Local</th>
-                <th class="th py-2 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tbody" class="divide-y"></tbody>
-          </table>
-        </div>
-      </section>
-    </section>
-  </div>
+            <section class="card p-5">
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b">
+                <th class="th py-2">Empleado</th>
+                <th class="th py-2">Festivo</th>
+                <th class="th py-2">Horas</th>
+                <th class="th py-2">Devolución</th>
+                <th class="th py-2">Estado</th>
+                <th class="th py-2">Notas</th>
+                <th class="th py-2">Local</th>
+                <th class="th py-2 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody" class="divide-y"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </div>
 
-  <!-- MODAL -->
-  <dialog id="modal" class="rounded-2xl p-0 w-full max-w-xl">
-    <form id="form" method="dialog" class="card p-6 space-y-4">
-      <div class="flex items-center justify-between">
-        <h3 id="modalTitle" class="text-lg font-semibold">Añadir registro</h3>
-        <button type="button" onclick="closeModalSafe()" class="btn">Cerrar</button>
-      </div>
+    <dialog id="modal" class="rounded-2xl p-0 w-full max-w-xl">
+    <form id="form" method="dialog" class="card p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="modalTitle" class="text-lg font-semibold">Añadir registro</h3>
+        <button type="button" onclick="closeModalSafe()" class="btn">Cerrar</button>
+      </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label class="text-sm text-slate-600">Empleado</label>
-          <input id="empleado" class="input" placeholder="Nombre empleado" />
-        </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm text-slate-600">Empleado</label>
+          <input id="empleado" class="input" placeholder="Nombre empleado" />
+        </div>
 
-        <div>
-          <label class="text-sm text-slate-600">Festivo trabajado</label>
-          <div class="flex gap-2">
-            <input id="festivo" required type="date" class="input" />
-            <button id="btnHoy" type="button" class="btn">Hoy</button>
-          </div>
-        </div>
+        <div>
+          <label class="text-sm text-slate-600">Festivo trabajado</label>
+          <div class="flex gap-2">
+            <input id="festivo" required type="date" class="input" />
+            <button id="btnHoy" type="button" class="btn">Hoy</button>
+          </div>
+        </div>
 
-        <div>
-          <label class="text-sm text-slate-600">Horas trabajadas</label>
-          <input id="horas" required type="number" step="0.25" min="0.25" class="input" placeholder="8" />
-        </div>
+        <div>
+          <label class="text-sm text-slate-600">Horas trabajadas</label>
+          <input id="horas" required type="number" step="0.25" min="0.25" class="input" placeholder="8" />
+        </div>
 
-        <div>
-          <label class="text-sm text-slate-600">Devolución programada</label>
-          <input id="devolucion" type="date" class="input" />
-        </div>
+        <div>
+          <label class="text-sm text-slate-600">Devolución programada</label>
+          <input id="devolucion" type="date" class="input" />
+        </div>
 
-        <div class="flex items-center gap-3">
-          <label class="text-sm text-slate-600">Devuelto</label>
-          <label class="switch"><input id="devuelto" type="checkbox"><span class="slider"></span></label>
-        </div>
+        <div class="flex items-center gap-3">
+          <label class="text-sm text-slate-600">Devuelto</label>
+          <label class="switch"><input id="devuelto" type="checkbox"><span class="slider"></span></label>
+        </div>
 
-        <!-- Local opcional; visible para admin/supervisor; oculto para empleado -->
-        <div id="wrapLocal">
-          <label class="text-sm text-slate-600">Local (opcional)</label>
-          <input id="local" class="input" list="locales" placeholder="Cañada / Oasis (opcional)" />
-          <datalist id="locales">
-            <option value="Cañada"></option>
-            <option value="Oasis"></option>
-          </datalist>
-        </div>
+                <div id="wrapLocal">
+          <label class="text-sm text-slate-600">Local (opcional)</label>
+          <input id="local" class="input" list="locales" placeholder="Cañada / Oasis (opcional)" />
+          <datalist id="locales">
+            <option value="Cañada"></option>
+            <option value="Oasis"></option>
+          </datalist>
+        </div>
 
-        <div class="md:col-span-2">
-          <label class="text-sm text-slate-600">Notas</label>
-          <input id="notas" class="input" placeholder="Opcional" />
-        </div>
-      </div>
+        <div class="md:col-span-2">
+          <label class="text-sm text-slate-600">Notas</label>
+          <input id="notas" class="input" placeholder="Opcional" />
+        </div>
+      </div>
 
-      <div class="flex justify-end gap-2">
-        <button type="button" id="btnDelete" class="btn hidden">Eliminar</button>
-        <button type="submit" class="btn-primary">Guardar</button>
-      </div>
-    </form>
-  </dialog>
+      <div class="flex justify-end gap-2">
+        <button type="button" id="btnDelete" class="btn hidden">Eliminar</button>
+        <button type="submit" class="btn-primary">Guardar</button>
+      </div>
+    </form>
+  </dialog>
 
-  <script>
-    // === CONFIG ===
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwXzwAlJZ8DO7L7xdqseFpvqTLdDV8cTO2NonJCHTesQLmruRFzZFjPFpxCAVdcvfK0wQ/exec';
-    const HORAS_POR_DIA = 8;
-    let TOKEN=null, ROLE='empleado', USERNAME='', USER_LOCAL='', DATA=[], EDIT_ID=null;
+  <div id="notification" class="notification"></div>
 
-    const $ = (s, el=document)=> el.querySelector(s);
-    const $$= (s, el=document)=> Array.from(el.querySelectorAll(s));
-    const modal = document.getElementById('modal');
+  <script>
+    // === CONFIG ===
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwXzwAlJZ8DO7L7xdqseFpvqTLdDV8cTO2NonJCHTesQLmruRFzZFjPFpxCAVdcvfK0wQ/exec';
+    const HORAS_POR_DIA = 8;
+    let TOKEN=null, ROLE='empleado', USERNAME='', USER_LOCAL='', DATA=[], EDIT_ID=null;
 
-    // Dialog seguro
-    function openModalSafe(){ try{ if(modal.showModal) modal.showModal(); else modal.setAttribute('open',''); }catch(e){ modal.setAttribute('open',''); } }
-    function closeModalSafe(){ try{ if(modal.close) modal.close(); else modal.removeAttribute('open'); }catch(e){ modal.removeAttribute('open'); } }
+    const $ = (s, el=document)=> el.querySelector(s);
+    const $$= (s, el=document)=> Array.from(el.querySelectorAll(s));
+    const modal = $('#modal');
+    const tbody = $('#tbody');
 
-    // === LOGIN ===
-    $('#btnLogin').addEventListener('click', async ()=>{
-      const usuario = $('#lUser').value.trim();
-      const password = $('#lPass').value;
-      $('#lMsg').textContent = '';
-      try{
-        const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'login', usuario, password}) });
-        const json = await res.json();
-        if(!json.ok) throw new Error(json.error||'Error');
-        TOKEN=json.token; ROLE=json.role; USERNAME=usuario; USER_LOCAL=json.local||'';
-        $('#uName').textContent = USERNAME; $('#uRole').textContent = ROLE;
-        if(ROLE==='supervisor'){ $('#uLocal').textContent = USER_LOCAL; $('#uLocalWrap').classList.remove('hidden'); }
-        $('#btnOpenModal').classList.remove('hidden');
-        $('#loginCard').classList.add('hidden'); $('#app').classList.remove('hidden');
-        await loadData();
-      }catch(err){ $('#lMsg').textContent = 'Acceso denegado ('+err.message+')'; }
-    });
+    // Diálogo seguro
+    function openModalSafe(){ try{ if(modal.showModal) modal.showModal(); else modal.setAttribute('open',''); }catch(e){ modal.setAttribute('open',''); } }
+    function closeModalSafe(){ try{ if(modal.close) modal.close(); else modal.removeAttribute('open'); }catch(e){ modal.removeAttribute('open'); } }
 
-    $('#btnLogout').addEventListener('click', ()=>{
-      TOKEN=null; ROLE='empleado'; USERNAME=''; USER_LOCAL=''; DATA=[]; render();
-      $('#app').classList.add('hidden'); $('#loginCard').classList.remove('hidden');
-    });
+    // Notificaciones
+    function showNotification(msg, duration=3000){
+      const el = $('#notification');
+      el.textContent = msg;
+      el.style.opacity = '1';
+      setTimeout(() => { el.style.opacity = '0'; }, duration);
+    }
 
-    // === API ===
-    async function api(action, payload={}){
-      const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({action, token:TOKEN}, payload)) });
-      const json = await res.json();
-      if(!json.ok) throw new Error(json.error||'API_ERROR');
-      return json;
-    }
-    async function loadData(){ const { data } = await api('list'); DATA = data; render(); }
+    // === LOGIN ===
+    $('#btnLogin').addEventListener('click', async ()=>{
+      const usuario = $('#lUser').value.trim();
+      const password = $('#lPass').value;
+      $('#lMsg').textContent = '';
+      try{
+        const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'login', usuario, password}) });
+        const json = await res.json();
+        if(!json.ok) throw new Error(json.error||'Error de autenticación.');
+        TOKEN=json.token; ROLE=json.role; USERNAME=usuario; USER_LOCAL=json.local||'';
+        $('#uName').textContent = USERNAME; $('#uRole').textContent = ROLE;
+        if(ROLE==='supervisor'){ $('#uLocal').textContent = USER_LOCAL; $('#uLocalWrap').classList.remove('hidden'); }
+        $('#btnOpenModal').classList.remove('hidden');
+        $('#loginCard').classList.add('hidden'); $('#app').classList.remove('hidden');
+        await loadData();
+      }catch(err){ $('#lMsg').textContent = 'Acceso denegado ('+err.message+')'; }
+    });
 
-    // === RENDER + FILTROS ===
-    $('#btnApplyFilters').addEventListener('click', ()=> render());
-    $('#btnClearFilters').addEventListener('click', ()=>{
-      ['fEmpleado','fEstado','fDesde','fHasta','fLocal'].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el.tagName==='SELECT') el.value='todos'; else el.value='';
-      });
-      render();
-    });
+    $('#btnLogout').addEventListener('click', ()=>{
+      TOKEN=null; ROLE='empleado'; USERNAME=''; USER_LOCAL=''; DATA=[]; render();
+      $('#app').classList.add('hidden'); $('#loginCard').classList.remove('hidden');
+    });
 
-    function render(){
-      const fEmpleado = ($('#fEmpleado').value||'').trim().toLowerCase();
-      const fEstado   = $('#fEstado').value;
-      const fDesde    = $('#fDesde').value ? new Date($('#fDesde').value) : null;
-      const fHasta    = $('#fHasta').value ? new Date($('#fHasta').value) : null;
-      const fLocal    = ($('#fLocal').value||'').trim().toLowerCase();
+    // === API ===
+    async function api(action, payload={}){
+      const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({action, token:TOKEN}, payload)) });
+      const json = await res.json();
+      if(!json.ok) throw new Error(json.error||'API_ERROR');
+      return json;
+    }
+    async function loadData(){
+      try {
+        const { data } = await api('list');
+        DATA = data;
+        render();
+      } catch (e) {
+        showNotification('Error al cargar datos: ' + e.message);
+      }
+    }
 
-      const filtered = (DATA||[]).filter(r=>{
-        if (fEmpleado && !String(r.empleado||'').toLowerCase().includes(fEmpleado)) return false;
-        if (fEstado==='pendiente' && r.devuelto) return false;
-        if (fEstado==='devuelto' && !r.devuelto) return false;
-        if (fLocal && !String(r.local||'').toLowerCase().includes(fLocal)) return false;
-        const dFest = new Date(r.festivo);
-        if (fDesde && dFest < fDesde) return false;
-        if (fHasta){ const dH=new Date(fHasta); dH.setHours(23,59,59,999); if (dFest > dH) return false; }
-        return true;
-      });
+    // === RENDER + FILTROS ===
+    $('#btnApplyFilters').addEventListener('click', ()=> render());
+    $('#btnClearFilters').addEventListener('click', ()=>{
+      ['fEmpleado','fEstado','fDesde','fHasta','fLocal'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el.tagName==='SELECT') el.value='todos'; else el.value='';
+      });
+      render();
+    });
 
-      const tbody = $('#tbody'); tbody.innerHTML='';
-      for(const r of filtered){
-        const tr = document.createElement('tr'); tr.className='hover:bg-slate-50';
-        tr.innerHTML = `
-          <td class="td py-3">${esc(r.empleado)}</td>
-          <td class="td">${fmtDate(r.festivo)}</td>
-          <td class="td">${num(r.horas)} h (${num(r.horas/HORAS_POR_DIA)} d)</td>
-          <td class="td">${r.devolucion ? fmtDate(r.devolucion) : '<span class="chip">Sin programar</span>'}</td>
-          <td class="td">${r.devuelto ? '<span class="chip">Devuelto</span>' : '<span class="chip">Pendiente</span>'}</td>
-          <td class="td">${r.notas ? esc(r.notas) : ''}</td>
-          <td class="td">${r.local ? esc(r.local) : ''}</td>
-          <td class="td text-right">
-            <button class="btn" data-edit="${r.id}">Editar</button>
-            ${!r.devuelto ? `<button class="btn" data-done="${r.id}">Marcar devuelto</button>` : ''}
-            <button class="btn" data-del="${r.id}">Borrar</button>
-          </td>`;
-        tbody.appendChild(tr);
-      }
+    function render(){
+      const fEmpleado = ($('#fEmpleado').value||'').trim().toLowerCase();
+      const fEstado   = $('#fEstado').value;
+      const fDesde    = $('#fDesde').value ? new Date($('#fDesde').value + 'T00:00:00') : null;
+      const fHasta    = $('#fHasta').value ? new Date($('#fHasta').value + 'T23:59:59') : null;
+      const fLocal    = ($('#fLocal').value||'').trim().toLowerCase();
 
-      $$('[data-edit]').forEach(b=>b.addEventListener('click', ()=> openEdit(b.getAttribute('data-edit'))));
-      $$('[data-done]').forEach(b=>b.addEventListener('click', async ()=>{
-        const id=b.getAttribute('data-done'); try{ await api('update',{record:{id,devuelto:true}}); await loadData(); }catch(e){ alert(e.message); }
-      }));
-      $$('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
-        const id=b.getAttribute('data-del'); if(!confirm('¿Eliminar registro?')) return;
-        try{ await api('delete',{id}); await loadData(); }catch(e){ alert(e.message); }
-      }));
-    }
+      const filtered = DATA.filter(r=>{
+        if (fEmpleado && !String(r.empleado||'').toLowerCase().includes(fEmpleado)) return false;
+        if (fEstado==='pendiente' && r.devuelto) return false;
+        if (fEstado==='devuelto' && !r.devuelto) return false;
+        if (fLocal && !String(r.local||'').toLowerCase().includes(fLocal)) return false;
+        const dFest = new Date(r.festivo);
+        if (fDesde && dFest < fDesde) return false;
+        if (fHasta && dFest > fHasta) return false;
+        return true;
+      });
 
-    // === HELPERS ===
-    const esc = s => String(s).replace(/[&<>\"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    const num = n => (Number(n||0)).toFixed(2);
-    function fmtDate(d){ const x=new Date(d); if(isNaN(+x)) return ''; return x.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'numeric',year:'numeric'}); }
+      tbody.innerHTML='';
+      if (filtered.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="td text-center py-4" colspan="8">No hay registros que coincidan con los filtros.</td>`;
+        tbody.appendChild(tr);
+      } else {
+        filtered.forEach(r => appendRow(r));
+      }
+    }
 
-    // === CRUD UI ===
-    document.getElementById('btnOpenModal').addEventListener('click', openCreate);
-    document.getElementById('btnDelete').addEventListener('click', async ()=>{
-      if(!EDIT_ID) return;
-      try{ await api('delete',{id:EDIT_ID}); closeModalSafe(); await loadData(); }catch(e){ alert(e.message); }
-    });
-    document.getElementById('btnHoy').addEventListener('click', ()=>{
-      const t=new Date(); const y=t.getFullYear(); const m=String(t.getMonth()+1).padStart(2,'0'); const d=String(t.getDate()).padStart(2,'0');
-      document.getElementById('festivo').value = `${y}-${m}-${d}`;
-    });
+    function appendRow(r) {
+      const tr = document.createElement('tr');
+      tr.id = 'row-' + r.id;
+      tr.className = 'hover:bg-slate-50';
+      tr.dataset.empleado = r.empleado;
+      tr.innerHTML = `
+        <td class="td py-3">${esc(r.empleado)}</td>
+        <td class="td">${fmtDate(r.festivo)}</td>
+        <td class="td">${num(r.horas)} h (${num(r.horas/HORAS_POR_DIA)} d)</td>
+        <td class="td">${r.devolucion ? fmtDate(r.devolucion) : '<span class="chip">Sin programar</span>'}</td>
+        <td class="td"><span class="chip">${r.devuelto ? 'Devuelto' : 'Pendiente'}</span></td>
+        <td class="td">${r.notas ? esc(r.notas) : ''}</td>
+        <td class="td">${r.local ? esc(r.local) : ''}</td>
+        <td class="td text-right">
+          <button class="btn ${ROLE === 'empleado' && r.empleado !== USERNAME ? 'hidden' : ''}" data-action="edit" data-id="${r.id}">Editar</button>
+          ${!r.devuelto && ROLE !== 'empleado' ? `<button class="btn" data-action="done" data-id="${r.id}">Marcar devuelto</button>` : ''}
+          <button class="btn ${ROLE === 'empleado' && r.empleado !== USERNAME ? 'hidden' : ''}" data-action="delete" data-id="${r.id}">Borrar</button>
+        </td>`;
+      tbody.appendChild(tr);
+    }
 
-    function openCreate(){
-      EDIT_ID=null;
-      $('#modalTitle').textContent='Añadir registro';
-      $('#btnDelete').classList.add('hidden');
+    // === HELPERS ===
+    const esc = s => String(s).replace(/[&<>\"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    const num = n => (Number(n||0)).toFixed(2);
+    function fmtDate(d){ const x=new Date(d); if(isNaN(+x)) return ''; return x.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'numeric',year:'numeric'}); }
 
-      if(ROLE==='admin' || ROLE==='supervisor'){
-        $('#empleado').value=''; $('#empleado').removeAttribute('disabled'); $('#empleado').removeAttribute('required');
-        $('#local').value='';   $('#local').removeAttribute('disabled');   $('#local').removeAttribute('required');
-        $('#wrapLocal').classList.remove('hidden');
-      }else{ // empleado
-        $('#empleado').value=USERNAME; $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
-        $('#local').value='';          $('#local').setAttribute('disabled','true');    $('#local').removeAttribute('required');
-        $('#wrapLocal').classList.add('hidden');
-      }
+    // === CRUD UI ===
+    function setModalUI(isEditMode = false, record = {}) {
+      $('#modalTitle').textContent = isEditMode ? 'Editar registro' : 'Añadir registro';
+      $('#btnDelete').classList.toggle('hidden', !isEditMode);
+      EDIT_ID = isEditMode ? record.id : null;
 
-      $('#festivo').value=''; $('#horas').value=8; $('#devolucion').value=''; $('#devuelto').checked=false; $('#notas').value='';
-      openModalSafe();
-    }
+      const isPrivileged = ROLE === 'admin' || ROLE === 'supervisor';
+      $('#empleado').value = isPrivileged ? (record.empleado || '') : USERNAME;
+      $('#empleado').disabled = !isPrivileged;
+      $('#empleado').required = !isPrivileged;
 
-    function openEdit(id){
-      const r = DATA.find(x=>x.id===id); if(!r) return;
-      EDIT_ID=id;
-      $('#modalTitle').textContent='Editar registro';
-      $('#btnDelete').classList.remove('hidden');
+      $('#local').value = record.local || '';
+      $('#local').disabled = !isPrivileged;
+      $('#wrapLocal').classList.toggle('hidden', !isPrivileged);
 
-      if(ROLE==='admin' || ROLE==='supervisor'){
-        $('#empleado').value=r.empleado; $('#empleado').removeAttribute('disabled'); $('#empleado').removeAttribute('required');
-        $('#local').value=r.local||'';   $('#local').removeAttribute('disabled');   $('#local').removeAttribute('required');
-        $('#wrapLocal').classList.remove('hidden');
-      }else{ // empleado
-        $('#empleado').value=USERNAME;   $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
-        $('#local').value=r.local||'';   $('#local').setAttribute('disabled','true');    $('#local').removeAttribute('required');
-        $('#wrapLocal').classList.add('hidden');
-      }
+      $('#festivo').value = record.festivo || '';
+      $('#horas').value = record.horas || 8;
+      $('#devolucion').value = record.devolucion || '';
+      $('#devuelto').checked = !!record.devuelto;
+      $('#notas').value = record.notas || '';
+      openModalSafe();
+    }
 
-      $('#festivo').value=r.festivo;
-      $('#horas').value=r.horas;
-      $('#devolucion').value=r.devolucion||'';
-      $('#devuelto').checked=!!r.devuelto;
-      $('#notas').value=r.notas||'';
-      openModalSafe();
-    }
+    $('#btnOpenModal').addEventListener('click', () => setModalUI());
+    $('#btnHoy').addEventListener('click', ()=>{
+      const t=new Date(); const y=t.getFullYear(); const m=String(t.getMonth()+1).padStart(2,'0'); const d=String(t.getDate()).padStart(2,'0');
+      $('#festivo').value = `${y}-${m}-${d}`;
+    });
 
-    document.getElementById('form').addEventListener('submit', async (e)=>{
-      e.preventDefault();
+    $('#form').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const rec = {
+        id: EDIT_ID,
+        empleado: (ROLE==='admin' || ROLE==='supervisor') ? $('#empleado').value.trim() : USERNAME,
+        festivo: $('#festivo').value,
+        horas: Number($('#horas').value||0),
+        devolucion: $('#devolucion').value || undefined,
+        devuelto: $('#devuelto').checked,
+        notas: $('#notas').value.trim() || undefined,
+        local: (ROLE==='admin' || ROLE==='supervisor') ? $('#local').value.trim() : ''
+      };
 
-      const empleado = (ROLE==='admin' || ROLE==='supervisor') ? $('#empleado').value.trim() : USERNAME;
-      const festivo  = $('#festivo').value;
-      const horas    = Number($('#horas').value||0);
-      const devolucion = $('#devolucion').value || undefined;
-      const devuelto   = $('#devuelto').checked;
-      const notas      = $('#notas').value.trim() || undefined;
-      const local      = (ROLE==='admin' || ROLE==='supervisor') ? $('#local').value.trim() : '';
+      if((ROLE==='admin' || ROLE==='supervisor') && !rec.empleado){ showNotification('Empleado es obligatorio'); return; }
+      if(!rec.festivo){ showNotification('Indica la fecha del festivo'); return; }
+      if(!(rec.horas>0)){ showNotification('Indica horas > 0'); return; }
+      
+      try{
+        const { record } = EDIT_ID ? await api('update', {record:rec}) : await api('add', {record:rec});
+        if (EDIT_ID) {
+          const index = DATA.findIndex(r => r.id === record.id);
+          if (index !== -1) DATA[index] = record;
+        } else {
+          DATA.push(record);
+        }
+        closeModalSafe();
+        render();
+        showNotification('Registro guardado con éxito.');
+      }catch(err){ showNotification(err.message); }
+    });
+    $('#btnDelete').addEventListener('click', async ()=>{
+      if(!EDIT_ID) return;
+      if(!confirm('¿Eliminar registro?')) return;
+      try{
+        await api('delete',{id:EDIT_ID});
+        DATA = DATA.filter(r => r.id !== EDIT_ID);
+        closeModalSafe();
+        render();
+        showNotification('Registro eliminado con éxito.');
+      }catch(e){ showNotification('Error al eliminar: ' + e.message); }
+    });
 
-      if((ROLE==='admin' || ROLE==='supervisor') && !empleado){ alert('Empleado es obligatorio'); return; }
-      if(!festivo){ alert('Indica la fecha del festivo'); return; }
-      if(!(horas>0)){ alert('Indica horas > 0'); return; }
+    // Delegación de eventos para la tabla
+    tbody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+      const record = DATA.find(r => r.id === id);
+      
+      if (!record) {
+        showNotification('Registro no encontrado.');
+        return;
+      }
 
-      const rec = {empleado, festivo, horas, devolucion, devuelto, notas, local};
+      try {
+        if (action === 'edit') {
+          setModalUI(true, record);
+        } else if (action === 'done') {
+          const { record: updatedRecord } = await api('update', { record: { id, devuelto: true } });
+          const index = DATA.findIndex(r => r.id === updatedRecord.id);
+          if (index !== -1) DATA[index] = updatedRecord;
+          render();
+          showNotification('Registro marcado como devuelto.');
+        } else if (action === 'delete') {
+          if (confirm('¿Eliminar registro?')) {
+            await api('delete', { id });
+            DATA = DATA.filter(r => r.id !== id);
+            render();
+            showNotification('Registro eliminado con éxito.');
+          }
+        }
+      } catch (e) {
+        showNotification('Error en la acción: ' + e.message);
+      }
+    });
 
-      try{
-        if(EDIT_ID){ rec.id=EDIT_ID; await api('update',{record:rec}); }
-        else{ await api('add',{record:rec}); }
-        closeModalSafe();
-        await loadData();
-      }catch(err){ alert(err.message); }
-    });
+    // Export/Import/Print
+    $('#btnPrint').addEventListener('click', ()=> window.print());
+    $('#btnExport').addEventListener('click', ()=>{
+      const header = ['id','empleado','festivo','horas','devolucion','devuelto','notas','local'];
+      const rows = DATA.map(r=> header.map(k=> JSON.stringify(r[k] ?? '')));
+      const csv = [header.join(','), ...rows.map(r=> r.join(','))].join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'festivos.csv'; a.click(); URL.revokeObjectURL(a.href);
+      showNotification('Datos exportados a festivos.csv');
+    });
 
-    // Export/Import/Print
-    $('#btnPrint').addEventListener('click', ()=> window.print());
-    $('#btnExport').addEventListener('click', ()=>{
-      const header = ['id','empleado','festivo','horas','devolucion','devuelto','notas','local'];
-      const rows = DATA.map(r=> header.map(k=> JSON.stringify(r[k] ?? '')));
-      const csv = [header.join(','), ...rows.map(r=> r.join(','))].join('\n');
-      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'festivos.csv'; a.click(); URL.revokeObjectURL(a.href);
-    });
-    $('#fileImport').addEventListener('change', async (e)=>{
-      const file = e.target.files[0]; if(!file) return;
-      const text = await file.text();
-      const lines = String(text).split(/\r?\n/).filter(Boolean);
-      const header = lines.shift().split(',');
-      const idx = (k)=> header.indexOf(k);
-      for(const line of lines){
-        const cols = parseCsvLine(line);
-        const rec = {
-          empleado: cols[idx('empleado')]||'',
-          festivo: cols[idx('festivo')]||'',
-          horas: Number(cols[idx('horas')]||0),
-          devolucion: cols[idx('devolucion')]||undefined,
-          devuelto: (String(cols[idx('devuelto')]||'').toLowerCase()==='true'),
-          notas: cols[idx('notas')]||undefined,
-          local: cols[idx('local')]||''
-        };
-        try{ await api('add',{record:rec}); }catch(e2){ alert(e2.message); }
-      }
-      e.target.value=''; await loadData();
-    });
-    function parseCsvLine(line){
-      const out=[]; let cur=''; let inQ=false;
-      for(let i=0;i<line.length;i++){
-        const ch=line[i];
-        if(ch=='"'){ if(inQ && line[i+1]=='"'){ cur+='"'; i++; } else { inQ=!inQ; } }
-        else if(ch===',' && !inQ){ out.push(cur); cur=''; }
-        else { cur+=ch; }
-      }
-      out.push(cur); return out;
-    }
-  </script>
+    $('#fileImport').addEventListener('change', async (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      let errors = [];
+      const text = await file.text();
+      const lines = String(text).split(/\r?\n/).filter(Boolean);
+      const header = lines.shift().split(',');
+      const idx = (k)=> header.indexOf(k);
+      for(let i=0; i<lines.length; i++){
+        const line = lines[i];
+        try {
+          const cols = parseCsvLine(line);
+          const rec = {
+            empleado: cols[idx('empleado')]||'',
+            festivo: cols[idx('festivo')]||'',
+            horas: Number(cols[idx('horas')]||0),
+            devolucion: cols[idx('devolucion')]||undefined,
+            devuelto: (String(cols[idx('devuelto')]||'').toLowerCase()==='true'),
+            notas: cols[idx('notas')]||undefined,
+            local: cols[idx('local')]||''
+          };
+          await api('add',{record:rec});
+        }catch(e2){
+          errors.push(`Línea ${i+2}: ${e2.message}`);
+        }
+      }
+      e.target.value=''; 
+      await loadData();
+      if (errors.length > 0) {
+        showNotification(`Se encontraron ${errors.length} errores al importar.`, 8000);
+      } else {
+        showNotification('Importación completada con éxito.');
+      }
+    });
+
+    function parseCsvLine(line){
+      const out=[]; let cur=''; let inQ=false;
+      for(let i=0;i<line.length;i++){
+        const ch=line[i];
+        if(ch=='"'){ if(inQ && line[i+1]=='"'){ cur+='"'; i++; } else { inQ=!inQ; } }
+        else if(ch===',' && !inQ){ out.push(cur); cur=''; }
+        else { cur+=ch; }
+      }
+      out.push(cur); return out;
+    }
+  </script>
 </body>
 </html>
