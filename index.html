@@ -136,6 +136,7 @@
           <label class="switch"><input id="devuelto" type="checkbox"><span class="slider"></span></label>
         </div>
 
+        <!-- Local opcional; visible para admin/supervisor; oculto para empleado -->
         <div id="wrapLocal">
           <label class="text-sm text-slate-600">Local (opcional)</label>
           <input id="local" class="input" list="locales" placeholder="Cañada / Oasis (opcional)" />
@@ -159,6 +160,7 @@
   </dialog>
 
   <script>
+    // === CONFIG ===
     const API_URL = 'https://script.google.com/macros/s/AKfycbwXzwAlJZ8DO7L7xdqseFpvqTLdDV8cTO2NonJCHTesQLmruRFzZFjPFpxCAVdcvfK0wQ/exec';
     const HORAS_POR_DIA = 8;
     let TOKEN=null, ROLE='empleado', USERNAME='', USER_LOCAL='', DATA=[], EDIT_ID=null;
@@ -167,16 +169,17 @@
     const $$= (s, el=document)=> Array.from(el.querySelectorAll(s));
     const modal = document.getElementById('modal');
 
+    // Dialog seguro
     function openModalSafe(){ try{ if(modal.showModal) modal.showModal(); else modal.setAttribute('open',''); }catch(e){ modal.setAttribute('open',''); } }
     function closeModalSafe(){ try{ if(modal.close) modal.close(); else modal.removeAttribute('open'); }catch(e){ modal.removeAttribute('open'); } }
 
-    // LOGIN
-    document.getElementById('btnLogin').addEventListener('click', async ()=>{
-      const usuario = document.getElementById('lUser').value.trim();
-      const password = document.getElementById('lPass').value;
+    // === LOGIN ===
+    $('#btnLogin').addEventListener('click', async ()=>{
+      const usuario = $('#lUser').value.trim();
+      const password = $('#lPass').value;
       $('#lMsg').textContent = '';
       try{
-        const res = await fetch(API_URL, { method:'POST', body: JSON.stringify({action:'login', usuario, password}) });
+        const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'login', usuario, password}) });
         const json = await res.json();
         if(!json.ok) throw new Error(json.error||'Error');
         TOKEN=json.token; ROLE=json.role; USERNAME=usuario; USER_LOCAL=json.local||'';
@@ -188,16 +191,30 @@
       }catch(err){ $('#lMsg').textContent = 'Acceso denegado ('+err.message+')'; }
     });
 
-    document.getElementById('btnLogout').addEventListener('click', ()=>{
+    $('#btnLogout').addEventListener('click', ()=>{
       TOKEN=null; ROLE='empleado'; USERNAME=''; USER_LOCAL=''; DATA=[]; render();
       $('#app').classList.add('hidden'); $('#loginCard').classList.remove('hidden');
     });
 
-    // API
-    async function api(action, payload={}){ const res = await fetch(API_URL, { method:'POST', body: JSON.stringify(Object.assign({action, token:TOKEN}, payload)) }); const j = await res.json(); if(!j.ok) throw new Error(j.error||'API_ERROR'); return j; }
+    // === API ===
+    async function api(action, payload={}){
+      const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({action, token:TOKEN}, payload)) });
+      const json = await res.json();
+      if(!json.ok) throw new Error(json.error||'API_ERROR');
+      return json;
+    }
     async function loadData(){ const { data } = await api('list'); DATA = data; render(); }
 
-    // RENDER
+    // === RENDER + FILTROS ===
+    $('#btnApplyFilters').addEventListener('click', ()=> render());
+    $('#btnClearFilters').addEventListener('click', ()=>{
+      ['fEmpleado','fEstado','fDesde','fHasta','fLocal'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el.tagName==='SELECT') el.value='todos'; else el.value='';
+      });
+      render();
+    });
+
     function render(){
       const fEmpleado = ($('#fEmpleado').value||'').trim().toLowerCase();
       const fEstado   = $('#fEstado').value;
@@ -205,8 +222,8 @@
       const fHasta    = $('#fHasta').value ? new Date($('#fHasta').value) : null;
       const fLocal    = ($('#fLocal').value||'').trim().toLowerCase();
 
-      const filtered = DATA.filter(r=>{
-        if (fEmpleado && !r.empleado.toLowerCase().includes(fEmpleado)) return false;
+      const filtered = (DATA||[]).filter(r=>{
+        if (fEmpleado && !String(r.empleado||'').toLowerCase().includes(fEmpleado)) return false;
         if (fEstado==='pendiente' && r.devuelto) return false;
         if (fEstado==='devuelto' && !r.devuelto) return false;
         if (fLocal && !String(r.local||'').toLowerCase().includes(fLocal)) return false;
@@ -245,23 +262,130 @@
       }));
     }
 
-    // Helpers
+    // === HELPERS ===
     const esc = s => String(s).replace(/[&<>\"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     const num = n => (Number(n||0)).toFixed(2);
     function fmtDate(d){ const x=new Date(d); if(isNaN(+x)) return ''; return x.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'numeric',year:'numeric'}); }
 
-    // Filtros
-    document.getElementById('btnApplyFilters').addEventListener('click', ()=> render());
-    document.getElementById('btnClearFilters').addEventListener('click', ()=>{
-      ['fEmpleado','fEstado','fDesde','fHasta','fLocal'].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el.tagName==='SELECT') el.value='todos'; else el.value='';
-      });
-      render();
+    // === CRUD UI ===
+    document.getElementById('btnOpenModal').addEventListener('click', openCreate);
+    document.getElementById('btnDelete').addEventListener('click', async ()=>{
+      if(!EDIT_ID) return;
+      try{ await api('delete',{id:EDIT_ID}); closeModalSafe(); await loadData(); }catch(e){ alert(e.message); }
+    });
+    document.getElementById('btnHoy').addEventListener('click', ()=>{
+      const t=new Date(); const y=t.getFullYear(); const m=String(t.getMonth()+1).padStart(2,'0'); const d=String(t.getDate()).padStart(2,'0');
+      document.getElementById('festivo').value = `${y}-${m}-${d}`;
     });
 
-    // CRUD UI (openCreate/openEdit/submit) – lo mismo que ya tienes…
-    // [Por simplicidad no repito todo aquí: mantén tus funciones openCreate, openEdit, submit iguales]
+    function openCreate(){
+      EDIT_ID=null;
+      $('#modalTitle').textContent='Añadir registro';
+      $('#btnDelete').classList.add('hidden');
+
+      if(ROLE==='admin' || ROLE==='supervisor'){
+        $('#empleado').value=''; $('#empleado').removeAttribute('disabled'); $('#empleado').removeAttribute('required');
+        $('#local').value='';   $('#local').removeAttribute('disabled');   $('#local').removeAttribute('required');
+        $('#wrapLocal').classList.remove('hidden');
+      }else{ // empleado
+        $('#empleado').value=USERNAME; $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
+        $('#local').value='';          $('#local').setAttribute('disabled','true');    $('#local').removeAttribute('required');
+        $('#wrapLocal').classList.add('hidden');
+      }
+
+      $('#festivo').value=''; $('#horas').value=8; $('#devolucion').value=''; $('#devuelto').checked=false; $('#notas').value='';
+      openModalSafe();
+    }
+
+    function openEdit(id){
+      const r = DATA.find(x=>x.id===id); if(!r) return;
+      EDIT_ID=id;
+      $('#modalTitle').textContent='Editar registro';
+      $('#btnDelete').classList.remove('hidden');
+
+      if(ROLE==='admin' || ROLE==='supervisor'){
+        $('#empleado').value=r.empleado; $('#empleado').removeAttribute('disabled'); $('#empleado').removeAttribute('required');
+        $('#local').value=r.local||'';   $('#local').removeAttribute('disabled');   $('#local').removeAttribute('required');
+        $('#wrapLocal').classList.remove('hidden');
+      }else{ // empleado
+        $('#empleado').value=USERNAME;   $('#empleado').setAttribute('disabled','true'); $('#empleado').setAttribute('required','true');
+        $('#local').value=r.local||'';   $('#local').setAttribute('disabled','true');    $('#local').removeAttribute('required');
+        $('#wrapLocal').classList.add('hidden');
+      }
+
+      $('#festivo').value=r.festivo;
+      $('#horas').value=r.horas;
+      $('#devolucion').value=r.devolucion||'';
+      $('#devuelto').checked=!!r.devuelto;
+      $('#notas').value=r.notas||'';
+      openModalSafe();
+    }
+
+    document.getElementById('form').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+
+      const empleado = (ROLE==='admin' || ROLE==='supervisor') ? $('#empleado').value.trim() : USERNAME;
+      const festivo  = $('#festivo').value;
+      const horas    = Number($('#horas').value||0);
+      const devolucion = $('#devolucion').value || undefined;
+      const devuelto   = $('#devuelto').checked;
+      const notas      = $('#notas').value.trim() || undefined;
+      const local      = (ROLE==='admin' || ROLE==='supervisor') ? $('#local').value.trim() : '';
+
+      if((ROLE==='admin' || ROLE==='supervisor') && !empleado){ alert('Empleado es obligatorio'); return; }
+      if(!festivo){ alert('Indica la fecha del festivo'); return; }
+      if(!(horas>0)){ alert('Indica horas > 0'); return; }
+
+      const rec = {empleado, festivo, horas, devolucion, devuelto, notas, local};
+
+      try{
+        if(EDIT_ID){ rec.id=EDIT_ID; await api('update',{record:rec}); }
+        else{ await api('add',{record:rec}); }
+        closeModalSafe();
+        await loadData();
+      }catch(err){ alert(err.message); }
+    });
+
+    // Export/Import/Print
+    $('#btnPrint').addEventListener('click', ()=> window.print());
+    $('#btnExport').addEventListener('click', ()=>{
+      const header = ['id','empleado','festivo','horas','devolucion','devuelto','notas','local'];
+      const rows = DATA.map(r=> header.map(k=> JSON.stringify(r[k] ?? '')));
+      const csv = [header.join(','), ...rows.map(r=> r.join(','))].join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'festivos.csv'; a.click(); URL.revokeObjectURL(a.href);
+    });
+    $('#fileImport').addEventListener('change', async (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      const text = await file.text();
+      const lines = String(text).split(/\r?\n/).filter(Boolean);
+      const header = lines.shift().split(',');
+      const idx = (k)=> header.indexOf(k);
+      for(const line of lines){
+        const cols = parseCsvLine(line);
+        const rec = {
+          empleado: cols[idx('empleado')]||'',
+          festivo: cols[idx('festivo')]||'',
+          horas: Number(cols[idx('horas')]||0),
+          devolucion: cols[idx('devolucion')]||undefined,
+          devuelto: (String(cols[idx('devuelto')]||'').toLowerCase()==='true'),
+          notas: cols[idx('notas')]||undefined,
+          local: cols[idx('local')]||''
+        };
+        try{ await api('add',{record:rec}); }catch(e2){ alert(e2.message); }
+      }
+      e.target.value=''; await loadData();
+    });
+    function parseCsvLine(line){
+      const out=[]; let cur=''; let inQ=false;
+      for(let i=0;i<line.length;i++){
+        const ch=line[i];
+        if(ch=='"'){ if(inQ && line[i+1]=='"'){ cur+='"'; i++; } else { inQ=!inQ; } }
+        else if(ch===',' && !inQ){ out.push(cur); cur=''; }
+        else { cur+=ch; }
+      }
+      out.push(cur); return out;
+    }
   </script>
 </body>
 </html>
