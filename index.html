@@ -267,14 +267,18 @@
     // Server calls (Apps Script)
     function loadAll(){
       loading(true);
-      google.script.run.withSuccessHandler(({workers, festivos, stats})=>{
-        WORKERS = workers || [];
-        ROWS = (festivos || []).slice().sort((a,b)=> new Date(b.fechaTrabajada||0) - new Date(a.fechaTrabajada||0));
-        renderWorkers();
-        renderTable(ROWS);
-        renderStats(stats || {});
-        loading(false);
-      }).getInitialData();
+      google.script.run
+        .withFailureHandler(err => { console.error(err); loading(false); toast('Error cargando datos: ' + (err && err.message ? err.message : err)); })
+        .withSuccessHandler(({workers, festivos, stats})=>{
+          WORKERS = workers || [];
+          ROWS = (festivos || []).slice().sort((a,b)=> new Date(b.fechaTrabajada||0) - new Date(a.fechaTrabajada||0));
+          renderWorkers();
+          renderTable(ROWS);
+          renderStats(stats || {});
+          loading(false);
+        })
+        .getInitialData();
+    }).getInitialData();
     }
 
     function applyFilters(){
@@ -283,14 +287,18 @@
       const desde = $('#f-desde').value; const hasta = $('#f-hasta').value;
       const filters = { estado, desde, hasta };
       loading(true);
-      google.script.run.withSuccessHandler(list=>{
-        let filtered = list;
-        if(q){ filtered = filtered.filter(r => (`${r.nombre}`.toLowerCase()).includes(q)); }
-        ROWS = filtered;
-        renderTable(filtered);
-        loading(false);
-        toast('Filtros aplicados');
-      }).getFestivos(filters);
+      google.script.run
+        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al filtrar: ' + (err && err.message ? err.message : err)); })
+        .withSuccessHandler(list=>{
+          let filtered = list;
+          if(q){ filtered = filtered.filter(r => (`${r.nombre}`.toLowerCase()).includes(q)); }
+          ROWS = filtered;
+          renderTable(filtered);
+          loading(false);
+          toast('Filtros aplicados');
+        })
+        .getFestivos(filters);
+    }).getFestivos(filters);
     }
 
     function resetFilters(){
@@ -307,7 +315,9 @@
       const exists = WORKERS.some(w => (w.nombre+' '+w.apellidos).toLowerCase() === key);
       if(exists) return toast('Ese trabajador ya existe');
       loading(true);
-      google.script.run.withSuccessHandler(()=>{ $('#w-nombre').value=''; $('#w-apellidos').value=''; toast('Trabajador añadido'); loadAll(); })
+      google.script.run
+        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al añadir trabajador: ' + (err && err.message ? err.message : err)); })
+        .withSuccessHandler(()=>{ $('#w-nombre').value=''; $('#w-apellidos').value=''; toast('Trabajador añadido'); loadAll(); })
         .addWorker({nombre, apellidos});
     }
 
@@ -320,30 +330,43 @@
       if(!trabajadorId || !fechaTrabajada) return toast('Elige trabajador y fecha trabajada');
       if(devuelto && !fechaDevuelto) return toast('Indica fecha devuelto');
       loading(true);
-      google.script.run.withSuccessHandler(()=>{
-        $('#form-festivo').reset(); $('#box-dev-real').classList.add('hidden');
-        toast('Festivo guardado'); loadAll();
-      }).addFestivo({ trabajadorId, fechaTrabajada, devuelto, fechaProgDevolucion, fechaDevuelto });
+      google.script.run
+        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al guardar festivo: ' + (err && err.message ? err.message : err)); })
+        .withSuccessHandler(()=>{
+          $('#form-festivo').reset(); $('#box-dev-real').classList.add('hidden');
+          toast('Festivo guardado'); loadAll();
+        })
+        .addFestivo({ trabajadorId, fechaTrabajada, devuelto, fechaProgDevolucion, fechaDevuelto });
+    }).addFestivo({ trabajadorId, fechaTrabajada, devuelto, fechaProgDevolucion, fechaDevuelto });
     }
 
     function editPlan(id, current){
       const fecha = prompt('Nueva fecha plan (YYYY-MM-DD)', current||'');
       if(!fecha) return;
       loading(true);
-      google.script.run.withSuccessHandler(()=>{ toast('Plan actualizado'); loadAll(); }).setPlanDevolucion(id, fecha);
+      google.script.run
+        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al actualizar plan: ' + (err && err.message ? err.message : err)); })
+        .withSuccessHandler(()=>{ toast('Plan actualizado'); loadAll(); })
+        .setPlanDevolucion(id, fecha);
     }
 
     function markDevuelto(id){
       const fecha = prompt('Fecha devuelto (YYYY-MM-DD)', fmt(new Date()));
       if(!fecha) return;
       loading(true);
-      google.script.run.withSuccessHandler(()=>{ toast('Marcado como devuelto'); loadAll(); }).setDevuelto(id, fecha);
+      google.script.run
+        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al marcar devuelto: ' + (err && err.message ? err.message : err)); })
+        .withSuccessHandler(()=>{ toast('Marcado como devuelto'); loadAll(); })
+        .setDevuelto(id, fecha);
     }
 
     function delFestivo(id){
       if(!confirm('¿Borrar este registro?')) return;
       loading(true);
-      google.script.run.withSuccessHandler(()=>{ toast('Registro borrado'); loadAll(); }).deleteFestivo(id);
+      google.script.run
+        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al borrar: ' + (err && err.message ? err.message : err)); })
+        .withSuccessHandler(()=>{ toast('Registro borrado'); loadAll(); })
+        .deleteFestivo(id);
     }
 
     // Events
