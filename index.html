@@ -3,82 +3,47 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard — Control de Festivos</title>
+  <title>Control de Festivos — v2</title>
   <style>
-    :root {
-      --bg: #0f172a;      /* slate-900 */
-      --card: #111827;    /* gray-900 */
-      --muted: #94a3b8;   /* slate-400 */
-      --text: #e5e7eb;    /* gray-200 */
-      --brand: #7c3aed;   /* violet-600 */
-      --ok: #10b981;      /* emerald-500 */
-      --warn: #f59e0b;    /* amber-500 */
-      --danger: #ef4444;  /* red-500 */
-      --border: #1f2937;  /* gray-800 */
+    :root{
+      --bg:#0f172a;--card:#0b1220;--text:#e5e7eb;--muted:#94a3b8;--brand:#7c3aed;--ok:#10b981;--warn:#f59e0b;--danger:#ef4444;--border:#1f2937
     }
-    * { box-sizing: border-box }
-    html, body { height: 100% }
-    body {
-      margin: 0; font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
-      color: var(--text); background: radial-gradient(1200px 600px at 10% -10%, #1f2937 0%, transparent 60%),
-                             radial-gradient(1200px 800px at 110% -20%, #1e293b 0%, transparent 60%),
-                             var(--bg);
-    }
-    .container { max-width: 1200px; margin: 32px auto; padding: 0 16px }
-
-    header { display:flex; align-items:center; gap:12px; margin-bottom:18px }
-    .logo { width:36px; height:36px; border-radius:12px; background: linear-gradient(135deg, var(--brand), #22d3ee);
-            display:grid; place-items:center; font-weight:800 }
-    .title { font-size: 22px; font-weight: 800 }
-    .muted { color: var(--muted) }
-
-    .grid { display:grid; gap:12px }
-    .grid.kpi { grid-template-columns: repeat(4, minmax(0,1fr)); margin-bottom: 14px }
-    .card { background: color-mix(in srgb, var(--card) 92%, black 8%); border: 1px solid var(--border); border-radius: 14px; padding: 14px }
-    .card h3 { margin: 0 0 6px 0; font-size: 12px; font-weight: 600; color: var(--muted) }
-    .card .big { font-size: 28px; font-weight: 800 }
-
-    .row { display:flex; flex-wrap: wrap; gap: 12px }
-    .row > * { flex: 1 1 280px }
-
-    label { display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px }
-    input, select, button { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: #0b1220; color: var(--text) }
-    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.7) }
-
-    button { cursor: pointer; border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--border) 60%); background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 30%, transparent), transparent) }
-    .btn { display:inline-flex; gap:8px; align-items:center; justify-content:center }
-    .btn.primary { background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 65%, transparent), transparent); border-color: var(--brand) }
-    .btn.success { border-color: var(--ok) }
-    .btn.warn { border-color: var(--warn) }
-    .btn.danger { border-color: var(--danger) }
-
-    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 14px; border: 1px solid var(--border) }
-    thead { background: #0b1220 }
-    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border) }
-    tbody tr:hover { background: #0e1626 }
-
-    .badge { display:inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; border:1px solid var(--border) }
-    .badge.ok { background: color-mix(in srgb, var(--ok) 20%, transparent) }
-    .badge.pend { background: color-mix(in srgb, var(--warn) 20%, transparent) }
-
-    .toolbar { display:flex; gap:8px; align-items:end }
-    .toolbar .grow { flex: 1 1 auto }
-    .right { text-align: right }
-
-    .flex { display:flex; gap:8px; align-items:center }
-    .center { display:grid; place-items:center }
-    .hidden { display: none !important }
-
-    .overdue { outline: 1px solid var(--danger); box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--danger) 10%, transparent) }
-
-    .toast { position: fixed; right: 16px; bottom: 16px; padding: 10px 12px; border-radius: 12px; background: #0b1220; border:1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,.35) }
-    .loading { position: fixed; inset: 0; background: rgba(2,6,23,.55); backdrop-filter: blur(2px); display:none; place-items:center; z-index: 20 }
-    .spinner { width: 38px; height: 38px; border: 3px solid #243145; border-top-color: var(--brand); border-radius: 999px; animation: spin 1s linear infinite }
-    @keyframes spin { to { transform: rotate(360deg) } }
-
-    @media (max-width: 900px) {
-      .grid.kpi { grid-template-columns: repeat(2,minmax(0,1fr)) }
-    }
+    *{box-sizing:border-box}
+    body{margin:0;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,system-ui,sans-serif;color:var(--text);background:linear-gradient(120deg,#0b1220, #0f172a)}
+    .container{max-width:1100px;margin:28px auto;padding:0 14px}
+    header{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+    .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#22d3ee);display:grid;place-items:center;font-weight:800}
+    .title{font-weight:800;font-size:20px}
+    .muted{color:var(--muted)}
+    .grid{display:grid;gap:10px}
+    .kpi{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
+    .card h3{margin:0 0 6px 0;font-size:12px;font-weight:600;color:var(--muted)}
+    .big{font-size:26px;font-weight:800}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row>*{flex:1 1 260px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+    input,select,button{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0a0f1a;color:var(--text)}
+    button{cursor:pointer;border-color:var(--brand);background:linear-gradient(180deg, color-mix(in srgb,var(--brand) 55%, transparent), transparent)}
+    .btn{display:inline-flex;gap:8px;align-items:center;justify-content:center}
+    .btn.warn{border-color:var(--warn)}.btn.success{border-color:var(--ok)}.btn.danger{border-color:var(--danger)}
+    table{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left}
+    thead{background:#0a0f1a}
+    tbody tr:hover{background:#0d1422}
+    .badge{padding:3px 8px;border-radius:999px;border:1px solid var(--border);font-size:12px}
+    .badge.ok{background:color-mix(in srgb,var(--ok) 20%, transparent)}
+    .badge.pend{background:color-mix(in srgb,var(--warn) 20%, transparent)}
+    .overdue{outline:1px solid var(--danger);box-shadow:inset 0 0 0 9999px color-mix(in srgb,var(--danger) 12%, transparent)}
+    .toolbar{display:flex;gap:8px;align-items:end}
+    .toolbar .grow{flex:1 1 auto}
+    .right{text-align:right}
+    .hidden{display:none!important}
+    .toast{position:fixed;right:14px;bottom:14px;background:#0a0f1a;border:1px solid var(--border);padding:10px 12px;border-radius:12px}
+    .loading{position:fixed;inset:0;background:rgba(2,6,23,.55);backdrop-filter:blur(2px);display:none;place-items:center;z-index:20}
+    .spinner{width:36px;height:36px;border:3px solid #223049;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:900px){.kpi{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 <body>
@@ -91,43 +56,39 @@
       </div>
     </header>
 
-    <!-- KPIs -->
     <div class="grid kpi">
-      <div class="card"><h3>Pendientes</h3><div id="kpi-pend" class="big">—</div></div>
-      <div class="card"><h3>Devueltos</h3><div id="kpi-dev" class="big">—</div></div>
-      <div class="card"><h3>Próx. 7 días</h3><div id="kpi-next" class="big">—</div></div>
-      <div class="card"><h3>Total registros</h3><div id="kpi-tot" class="big">—</div></div>
+      <div class="card"><h3>Pendientes</h3><div class="big" id="kpi-pend">—</div></div>
+      <div class="card"><h3>Devueltos</h3><div class="big" id="kpi-dev">—</div></div>
+      <div class="card"><h3>Próx. 7 días</h3><div class="big" id="kpi-next">—</div></div>
+      <div class="card"><h3>Total registros</h3><div class="big" id="kpi-tot">—</div></div>
     </div>
 
-    <!-- Formularios -->
-    <div class="row">
+    <div class="row" style="margin-top:10px">
       <div class="card">
         <h3>Nuevo trabajador</h3>
-        <form id="form-worker" class="row" onsubmit="return false;">
+        <div class="row">
           <div>
             <label>Nombre</label>
-            <input id="w-nombre" placeholder="Nombre" required />
+            <input id="w-nombre" placeholder="Nombre" />
           </div>
           <div>
             <label>Apellidos</label>
-            <input id="w-apellidos" placeholder="Apellidos" required />
+            <input id="w-apellidos" placeholder="Apellidos" />
           </div>
-          <div style="align-self:end">
-            <button class="btn primary" id="btn-add-worker">Añadir trabajador</button>
-          </div>
-        </form>
+          <div style="align-self:end"><button class="btn" id="btn-add-worker">Añadir trabajador</button></div>
+        </div>
       </div>
 
       <div class="card">
         <h3>Nuevo festivo trabajado</h3>
-        <form id="form-festivo" class="row" onsubmit="return false;">
+        <div class="row">
           <div>
             <label>Trabajador</label>
-            <select id="f-trabajador" required></select>
+            <select id="f-trabajador"></select>
           </div>
           <div>
             <label>Fecha trabajada</label>
-            <input type="date" id="f-fecha" required />
+            <input type="date" id="f-fecha" />
           </div>
           <div>
             <label>Fecha devolución (plan)</label>
@@ -135,74 +96,36 @@
           </div>
           <div>
             <label>¿Ya devuelto?</label>
-            <select id="f-devuelto">
-              <option value="no" selected>No</option>
-              <option value="si">Sí</option>
-            </select>
+            <select id="f-devuelto"><option value="no" selected>No</option><option value="si">Sí</option></select>
           </div>
           <div id="box-dev-real" class="hidden">
             <label>Fecha devuelto</label>
             <input type="date" id="f-dev-real" />
           </div>
-          <div style="align-self:end">
-            <button class="btn primary" id="btn-add-festivo">Añadir festivo</button>
-          </div>
-        </form>
+          <div style="align-self:end"><button class="btn" id="btn-add-festivo">Añadir festivo</button></div>
+        </div>
       </div>
     </div>
 
-    <!-- Filtros -->
-    <div class="card" style="margin-top:12px">
+    <div class="card" style="margin-top:10px">
       <h3>Filtros</h3>
       <div class="toolbar">
-        <div class="grow">
-          <label>Búsqueda (nombre/apellidos)</label>
-          <input id="q" placeholder="Escribe para filtrar…" />
-        </div>
-        <div>
-          <label>Estado</label>
-          <select id="f-estado">
-            <option value="">Todos</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="devuelto">Devuelto</option>
-          </select>
-        </div>
-        <div>
-          <label>Desde</label>
-          <input type="date" id="f-desde" />
-        </div>
-        <div>
-          <label>Hasta</label>
-          <input type="date" id="f-hasta" />
-        </div>
-        <div>
-          <button class="btn" id="btn-aplicar">Aplicar</button>
-        </div>
-        <div>
-          <button class="btn" id="btn-reset">Reset</button>
-        </div>
+        <div class="grow"><label>Búsqueda</label><input id="q" placeholder="Nombre o apellidos"/></div>
+        <div><label>Estado</label><select id="f-estado"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="devuelto">Devuelto</option></select></div>
+        <div><label>Desde</label><input type="date" id="f-desde"/></div>
+        <div><label>Hasta</label><input type="date" id="f-hasta"/></div>
+        <div><button class="btn" id="btn-aplicar">Aplicar</button></div>
+        <div><button class="btn" id="btn-reset">Reset</button></div>
       </div>
     </div>
 
-    <!-- Tabla -->
-    <div class="card" style="margin-top:12px">
-      <div class="row" style="align-items:center; margin-bottom:8px">
+    <div class="card" style="margin-top:10px">
+      <div class="row" style="align-items:center;margin-bottom:6px">
         <div class="muted">Registros: <span id="count">—</span></div>
-        <div class="right" style="flex:1">
-          <button id="btn-export" class="btn">Exportar CSV</button>
-        </div>
+        <div class="right" style="flex:1"><button class="btn" id="btn-export">Exportar CSV</button></div>
       </div>
-      <table id="tabla">
-        <thead>
-          <tr>
-            <th>Trabajador</th>
-            <th>Fecha trabajada</th>
-            <th>Devolución (plan)</th>
-            <th>Estado</th>
-            <th>Fecha devuelto</th>
-            <th class="right">Acciones</th>
-          </tr>
-        </thead>
+      <table>
+        <thead><tr><th>Trabajador</th><th>Fecha trabajada</th><th>Devolución (plan)</th><th>Estado</th><th>Fecha devuelto</th><th class="right">Acciones</th></tr></thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
@@ -212,193 +135,105 @@
   <div class="toast hidden" id="toast"></div>
 
   <script>
-    const $ = (s) => document.querySelector(s);
-    const $$ = (s) => Array.from(document.querySelectorAll(s));
+    const $ = s => document.querySelector(s);
+    let WORKERS = [], ROWS = [];
 
-    let WORKERS = []; // {id, nombre, apellidos}
-    let ROWS = [];    // festivos
+    // Utilidades seguras con fechas vacías
+    const fmt = (d) => { const dt = d instanceof Date ? d : (d ? new Date(d) : null); return (dt && !isNaN(dt)) ? dt.toISOString().slice(0,10) : ''; };
+    const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'), 2200); };
+    const loading = (on) => $('#loading').style.display = on? 'grid' : 'none';
 
-    // Utils
-    const fmt = (d) => d ? new Date(d).toISOString().slice(0,10) : '';
-    const parseDate = (v) => v ? new Date(v + 'T00:00:00') : null;
-    const toast = (m) => { const t=$('#toast'); t.textContent=m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'), 2200); };
-    const loading = (on) => $('#loading').style.display = on ? 'grid' : 'none';
-
-    // Render workers in select
     function renderWorkers(){
       const sel = $('#f-trabajador');
-      sel.innerHTML = '<option value="" disabled selected>Elige trabajador…</option>' +
-        WORKERS.map(w=>`<option value="${w.id}">${w.nombre} ${w.apellidos}</option>`).join('');
+      sel.innerHTML = '<option value="" disabled selected>Elige trabajador…</option>' + WORKERS.map(w=>`<option value="${w.id}">${w.nombre} ${w.apellidos}</option>`).join('');
     }
-
-    function renderStats(stats){
-      $('#kpi-pend').textContent = stats.pendientes ?? '0';
-      $('#kpi-dev').textContent = stats.devueltos ?? '0';
-      $('#kpi-next').textContent = stats.proximos7d ?? '0';
-      $('#kpi-tot').textContent = stats.total ?? '0';
-    }
+    function renderStats(s){ $('#kpi-pend').textContent=s.pendientes||0; $('#kpi-dev').textContent=s.devueltos||0; $('#kpi-next').textContent=s.proximos7d||0; $('#kpi-tot').textContent=s.total||0; }
 
     function renderTable(list){
-      const tbody = $('#tbody');
+      const t = $('#tbody');
       const today = new Date(); today.setHours(0,0,0,0);
-      tbody.innerHTML = list.map(r=>{
-        const fpd = r.fechaProgDevolucion ? new Date(r.fechaProgDevolucion) : null;
-        if (fpd) fpd.setHours(0,0,0,0);
-        const overdue = !r.devuelto && fpd && fpd < today;
-        const estado = r.devuelto ? `<span class="badge ok">Devuelto</span>`: `<span class="badge pend">Pendiente</span>`;
-        return `<tr${overdue? ' class="overdue"':''}>
-          <td>${r.nombre ?? ''}</td>
-          <td>${fmt(r.fechaTrabajada)}</td>
-          <td>${fmt(r.fechaProgDevolucion)}</td>
-          <td>${estado}</td>
-          <td>${fmt(r.fechaDevuelto)}</td>
-          <td class="right">
-            <div class="flex" style="justify-content:flex-end">
-              <button class="btn warn" ${r.devuelto? 'disabled':''} onclick="editPlan('${r.id}','${fmt(r.fechaProgDevolucion)}')">Editar plan</button>
-              <button class="btn success" ${r.devuelto? 'disabled':''} onclick="markDevuelto('${r.id}')">Marcar devuelto</button>
-              <button class="btn danger" onclick="delFestivo('${r.id}')">Borrar</button>
-            </div>
-          </td>
-        </tr>`
-      }).join('');
-      $('#count').textContent = list.length;
+      try {
+        t.innerHTML = list.map(r=>{
+          const fTrab = fmt(r.fechaTrabajada), fPlan = fmt(r.fechaProgDevolucion), fReal = fmt(r.fechaDevuelto);
+          const fpd = r.fechaProgDevolucion ? new Date(r.fechaProgDevolucion) : null; if (fpd) fpd.setHours(0,0,0,0);
+          const overdue = !r.devuelto && fpd && fpd < today;
+          const estado = r.devuelto ? '<span class="badge ok">Devuelto</span>' : '<span class="badge pend">Pendiente</span>';
+          return `<tr${overdue? ' class="overdue"':''}><td>${r.nombre||''}</td><td>${fTrab}</td><td>${fPlan}</td><td>${estado}</td><td>${fReal}</td><td class="right"><button class="btn warn" ${r.devuelto?'disabled':''} onclick="editPlan('${r.id}','${fPlan}')">Editar plan</button> <button class="btn success" ${r.devuelto?'disabled':''} onclick="markDevuelto('${r.id}')">Marcar devuelto</button> <button class="btn danger" onclick="delFestivo('${r.id}')">Borrar</button></td></tr>`;
+        }).join('');
+        document.getElementById('count').textContent = list.length;
+      } catch(e){ console.error(e); toast('Error pintando tabla'); }
     }
 
-    // Server calls (Apps Script)
+    // Server calls
     function loadAll(){
       loading(true);
       google.script.run
-        .withFailureHandler(err => { console.error(err); loading(false); toast('Error cargando datos: ' + (err && err.message ? err.message : err)); })
+        .withFailureHandler(err=>{ console.error(err); loading(false); toast('Error cargando: '+(err?.message||err)); })
         .withSuccessHandler(({workers, festivos, stats})=>{
-          WORKERS = workers || [];
-          ROWS = (festivos || []).slice().sort((a,b)=> new Date(b.fechaTrabajada||0) - new Date(a.fechaTrabajada||0));
-          renderWorkers();
-          renderTable(ROWS);
-          renderStats(stats || {});
+          WORKERS = workers||[];
+          ROWS = (festivos||[]).slice().sort((a,b)=> new Date(b.fechaTrabajada||0) - new Date(a.fechaTrabajada||0));
+          renderWorkers(); renderTable(ROWS); renderStats(stats||{});
           loading(false);
         })
         .getInitialData();
-    }).getInitialData();
     }
 
-    function applyFilters(){
-      const estado = $('#f-estado').value;
-      const q = $('#q').value.trim().toLowerCase();
-      const desde = $('#f-desde').value; const hasta = $('#f-hasta').value;
-      const filters = { estado, desde, hasta };
-      loading(true);
-      google.script.run
-        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al filtrar: ' + (err && err.message ? err.message : err)); })
-        .withSuccessHandler(list=>{
-          let filtered = list;
-          if(q){ filtered = filtered.filter(r => (`${r.nombre}`.toLowerCase()).includes(q)); }
-          ROWS = filtered;
-          renderTable(filtered);
-          loading(false);
-          toast('Filtros aplicados');
-        })
-        .getFestivos(filters);
-    }).getFestivos(filters);
-    }
-
-    function resetFilters(){
-      $('#q').value = ''; $('#f-estado').value=''; $('#f-desde').value=''; $('#f-hasta').value='';
-      loadAll();
-    }
-
-    // Actions
     function addWorker(){
-      const nombre = $('#w-nombre').value.trim();
-      const apellidos = $('#w-apellidos').value.trim();
-      if(!nombre || !apellidos) return toast('Completa nombre y apellidos');
-      const key = (nombre+' '+apellidos).toLowerCase();
-      const exists = WORKERS.some(w => (w.nombre+' '+w.apellidos).toLowerCase() === key);
-      if(exists) return toast('Ese trabajador ya existe');
+      const nombre=$('#w-nombre').value.trim(), apellidos=$('#w-apellidos').value.trim();
+      if(!nombre||!apellidos) return toast('Completa nombre y apellidos');
+      const dup = WORKERS.some(w => (w.nombre+' '+w.apellidos).toLowerCase() === (nombre+' '+apellidos).toLowerCase());
+      if(dup) return toast('Ese trabajador ya existe');
       loading(true);
       google.script.run
-        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al añadir trabajador: ' + (err && err.message ? err.message : err)); })
+        .withFailureHandler(err=>{ console.error(err); loading(false); toast('Error trabajador: '+(err?.message||err)); })
         .withSuccessHandler(()=>{ $('#w-nombre').value=''; $('#w-apellidos').value=''; toast('Trabajador añadido'); loadAll(); })
-        .addWorker({nombre, apellidos});
+        .addWorker({nombre,apellidos});
     }
 
     function addFestivo(){
-      const trabajadorId = $('#f-trabajador').value;
-      const fechaTrabajada = $('#f-fecha').value;
-      const devuelto = $('#f-devuelto').value === 'si';
-      const fechaProgDevolucion = $('#f-dev-plan').value || null;
-      const fechaDevuelto = $('#f-dev-real').value || null;
-      if(!trabajadorId || !fechaTrabajada) return toast('Elige trabajador y fecha trabajada');
-      if(devuelto && !fechaDevuelto) return toast('Indica fecha devuelto');
+      const trabajadorId=$('#f-trabajador').value, fechaTrabajada=$('#f-fecha').value, devuelto=$('#f-devuelto').value==='si', fechaProgDevolucion=$('#f-dev-plan').value||null, fechaDevuelto=$('#f-dev-real').value||null;
+      if(!trabajadorId||!fechaTrabajada) return toast('Elige trabajador y fecha');
+      if(devuelto&&!fechaDevuelto) return toast('Indica fecha devuelto');
       loading(true);
       google.script.run
-        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al guardar festivo: ' + (err && err.message ? err.message : err)); })
-        .withSuccessHandler(()=>{
-          $('#form-festivo').reset(); $('#box-dev-real').classList.add('hidden');
-          toast('Festivo guardado'); loadAll();
-        })
-        .addFestivo({ trabajadorId, fechaTrabajada, devuelto, fechaProgDevolucion, fechaDevuelto });
-    }).addFestivo({ trabajadorId, fechaTrabajada, devuelto, fechaProgDevolucion, fechaDevuelto });
+        .withFailureHandler(err=>{ console.error(err); loading(false); toast('Error festivo: '+(err?.message||err)); })
+        .withSuccessHandler(()=>{ $('#form-festivo')?.reset(); document.getElementById('box-dev-real').classList.add('hidden'); toast('Festivo guardado'); loadAll(); })
+        .addFestivo({trabajadorId,fechaTrabajada,devuelto,fechaProgDevolucion,fechaDevuelto});
     }
 
     function editPlan(id, current){
-      const fecha = prompt('Nueva fecha plan (YYYY-MM-DD)', current||'');
-      if(!fecha) return;
+      const fecha = prompt('Nueva fecha plan (YYYY-MM-DD)', current||''); if(!fecha) return;
       loading(true);
       google.script.run
-        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al actualizar plan: ' + (err && err.message ? err.message : err)); })
+        .withFailureHandler(err=>{ console.error(err); loading(false); toast('Error plan: '+(err?.message||err)); })
         .withSuccessHandler(()=>{ toast('Plan actualizado'); loadAll(); })
         .setPlanDevolucion(id, fecha);
     }
+    function markDevuelto(id){ const fecha = prompt('Fecha devuelto (YYYY-MM-DD)', fmt(new Date())); if(!fecha) return; loading(true); google.script.run.withFailureHandler(err=>{ console.error(err); loading(false); toast('Error marcar: '+(err?.message||err)); }).withSuccessHandler(()=>{ toast('Marcado como devuelto'); loadAll(); }).setDevuelto(id, fecha); }
+    function delFestivo(id){ if(!confirm('¿Borrar este registro?')) return; loading(true); google.script.run.withFailureHandler(err=>{ console.error(err); loading(false); toast('Error borrar: '+(err?.message||err)); }).withSuccessHandler(()=>{ toast('Borrado'); loadAll(); }).deleteFestivo(id); }
 
-    function markDevuelto(id){
-      const fecha = prompt('Fecha devuelto (YYYY-MM-DD)', fmt(new Date()));
-      if(!fecha) return;
+    function applyFilters(){
+      const estado=$('#f-estado').value, q=$('#q').value.trim().toLowerCase(), desde=$('#f-desde').value, hasta=$('#f-hasta').value;
       loading(true);
       google.script.run
-        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al marcar devuelto: ' + (err && err.message ? err.message : err)); })
-        .withSuccessHandler(()=>{ toast('Marcado como devuelto'); loadAll(); })
-        .setDevuelto(id, fecha);
+        .withFailureHandler(err=>{ console.error(err); loading(false); toast('Error filtros: '+(err?.message||err)); })
+        .withSuccessHandler(list=>{ let filtered=list||[]; if(q){ filtered=filtered.filter(r=>(`${r.nombre}`.toLowerCase()).includes(q)); } ROWS=filtered; renderTable(filtered); loading(false); })
+        .getFestivos({estado,desde,hasta});
     }
+    function resetFilters(){ $('#q').value=''; $('#f-estado').value=''; $('#f-desde').value=''; $('#f-hasta').value=''; loadAll(); }
 
-    function delFestivo(id){
-      if(!confirm('¿Borrar este registro?')) return;
-      loading(true);
-      google.script.run
-        .withFailureHandler(err => { console.error(err); loading(false); toast('Error al borrar: ' + (err && err.message ? err.message : err)); })
-        .withSuccessHandler(()=>{ toast('Registro borrado'); loadAll(); })
-        .deleteFestivo(id);
-    }
+    function exportCSV(){ if(!ROWS.length) return toast('Nada que exportar'); const cols=['Trabajador','FechaTrabajada','FechaDevolucionPlan','Estado','FechaDevuelto']; const lines=[cols.join(',')].concat(ROWS.map(r=>['"'+(r.nombre||'')+'"', fmt(r.fechaTrabajada), fmt(r.fechaProgDevolucion), r.devuelto?'Devuelto':'Pendiente', fmt(r.fechaDevuelto)].join(','))); const blob=new Blob([lines.join('
+')],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='festivos.csv'; a.click(); URL.revokeObjectURL(url); }
 
-    // Events
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded',()=>{
       loadAll();
-      $('#btn-add-worker').addEventListener('click', addWorker);
-      $('#btn-add-festivo').addEventListener('click', addFestivo);
-      $('#btn-aplicar').addEventListener('click', applyFilters);
-      $('#btn-reset').addEventListener('click', resetFilters);
-      $('#btn-export').addEventListener('click', exportCSV);
-      $('#f-devuelto').addEventListener('change', (e)=>{
-        if(e.target.value==='si'){ $('#box-dev-real').classList.remove('hidden'); }
-        else { $('#box-dev-real').classList.add('hidden'); $('#f-dev-real').value=''; }
-      });
+      document.getElementById('btn-add-worker').addEventListener('click', addWorker);
+      document.getElementById('btn-add-festivo').addEventListener('click', addFestivo);
+      document.getElementById('btn-aplicar').addEventListener('click', applyFilters);
+      document.getElementById('btn-reset').addEventListener('click', resetFilters);
+      document.getElementById('btn-export').addEventListener('click', exportCSV);
+      document.getElementById('f-devuelto').addEventListener('change', e=>{ if(e.target.value==='si') document.getElementById('box-dev-real').classList.remove('hidden'); else { document.getElementById('box-dev-real').classList.add('hidden'); document.getElementById('f-dev-real').value=''; } });
     });
-
-    // Export CSV (cliente)
-    function exportCSV(){
-      if(!ROWS.length) return toast('Nada que exportar');
-      const cols = ['Trabajador','FechaTrabajada','FechaDevolucionPlan','Estado','FechaDevuelto'];
-      const lines = [cols.join(',')].concat(ROWS.map(r=>[
-        '"' + (r.nombre||'') + '"',
-        fmt(r.fechaTrabajada),
-        fmt(r.fechaProgDevolucion),
-        r.devuelto? 'Devuelto':'Pendiente',
-        fmt(r.fechaDevuelto)
-      ].join(',')));
-      const blob = new Blob([lines.join('\n')], {type: 'text/csv'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download='festivos.csv'; a.click();
-      URL.revokeObjectURL(url);
-    }
   </script>
 </body>
 </html>
